@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.mycompany.app</groupId>
-  <artifactId>my-app</artifactId>
+  <artifactId>milestone1</artifactId>
   <version>1.0-SNAPSHOT</version>
 
-  <name>my-app</name>
+  <name>milestone1</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
@@ -25,6 +25,33 @@
       <version>4.11</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.json/json -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20230227</version>
+    </dependency>
+
+    <dependency>
+      <!-- https://central.sonatype.dev/artifact/org.eclipse.jgit/org.eclipse.jgit/ -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <version>6.5.0.202303070854-r</version>
+
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.0.5</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -71,5 +98,15 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>8</source>
+          <target>8</target>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
