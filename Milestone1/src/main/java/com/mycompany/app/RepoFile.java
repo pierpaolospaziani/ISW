@@ -8,17 +8,17 @@ public class RepoFile{
     private ArrayList<String> releases;
     private ArrayList<String> paths;
     private ArrayList<Integer> LOCs;
-    private ArrayList<Integer> touchedLOCs; /* between two release : added + deleted */
-    private ArrayList<Integer> churn; /* between two release : |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
+    private ArrayList<Integer> touchedLOCs;         /* between two release:  added + deleted */
+    private ArrayList<Integer> churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
     private int revisionFirstAppearance;
     private ArrayList<Integer> nAuth;
     private ArrayList<Integer> revisions;
     private ArrayList<Integer> nFilesChanged;
 
     public RepoFile(String name) {
-        this.name = name;
-        this.appearances = 1;
-        this.releases = new ArrayList<>();
+        this.name = name;                           // nome della classe
+        this.appearances = 1;                       // in quanti commit appare
+        this.releases = new ArrayList<>();          // in quante release appare
         this.paths = new ArrayList<>();
         this.LOCs = new ArrayList<>();
         this.touchedLOCs = new ArrayList<>();
@@ -72,13 +72,9 @@ public class RepoFile{
         return touchedLOCs;
     }
 
-    /**
-     * Insert the churn for a release
-    * @param c index of the current release
-    * */
     public void insertChurn(int c) {
         int churn;
-        if(c == 0){ //first release -> added - deleted = LOCs
+        if(c == 0){
             churn = this.LOCs.get(c);
         }else{
             churn = Math.abs(this.LOCs.get(c) - this.LOCs.get(c-1));

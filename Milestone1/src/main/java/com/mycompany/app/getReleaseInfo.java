@@ -3,7 +3,6 @@ package com.mycompany.app;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -11,27 +10,28 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-
 public class getReleaseInfo {
     public static HashMap<LocalDateTime, String> releaseNames;
     public static HashMap<LocalDateTime, String> releaseID;
     public static ArrayList<LocalDateTime> releases;
     public static Integer numVersions;
-    public static List<String> relNames = new ArrayList<>(); // lista dei nomi delle release ordinate, la uso in FilesRet.java per ordinarmi quelle di git
+    public static List<String> relNames = new ArrayList<>();    // lista dei nomi delle release ordinate, la uso in FilesRet.java per ordinarmi quelle di git
 
+
+    /**
+     * Popola le lista 'releases' e la ordina, ignorando quelle senza data
+     * Popola 'relNames' e scarta l'ultimo 50% */
     public static void retrieveReleases() throws IOException, JSONException {
 
-        String projName = "BOOKKEEPER";
-        //Fills the arraylist with releases dates and orders them
-        //Ignores releases with missing dates
-        releases = new ArrayList<LocalDateTime>();
-        int i;
-        String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
+        String url = "https://issues.apache.org/jira/rest/api/2/project/" + "BOOKKEEPER";
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
-        releaseNames = new HashMap<LocalDateTime, String>();
-        releaseID = new HashMap<LocalDateTime, String>();
-        for (i = 0; i < versions.length(); i++) {
+
+        releases = new ArrayList<>();
+        releaseNames = new HashMap<>();
+        releaseID = new HashMap<>();
+
+        for (int i = 0; i < versions.length(); i++) {
             String name = "";
             String id = "";
             if (versions.getJSONObject(i).has("releaseDate")) {
@@ -42,14 +42,11 @@ public class getReleaseInfo {
                 addRelease(versions.getJSONObject(i).get("releaseDate").toString(), name, id);
             }
         }
-        // order releases by date
-        releases.sort(new Comparator<LocalDateTime>() {
-            //@Override
-            public int compare(LocalDateTime o1, LocalDateTime o2) {
-                return o1.compareTo(o2);
-            }
-        });
 
+        // ordina le release per data
+        releases.sort(LocalDateTime::compareTo);
+
+        // compone il nome completo delle release
         for(LocalDateTime ldt : releases){
             for(LocalDateTime l : releaseNames.keySet()) {
                 if(l.equals(ldt))
@@ -59,7 +56,6 @@ public class getReleaseInfo {
 
         // scarta l'ultimo 50% delle release
         int len = relNames.size();
-        System.out.println(len);
         if (len > len / 2 + 1) {
             relNames.subList(len / 2 + 1, len).clear();
         }
