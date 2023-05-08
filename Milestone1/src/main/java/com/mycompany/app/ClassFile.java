@@ -2,7 +2,7 @@ package com.mycompany.app;
 
 import java.util.ArrayList;
 
-public class RepoFile{
+public class ClassFile {
     private String name;
     private int appearances;
     private ArrayList<String> releases;
@@ -14,11 +14,12 @@ public class RepoFile{
     private ArrayList<Integer> nAuth;
     private ArrayList<Integer> revisions;
     private ArrayList<Integer> nFilesChanged;
+    private ArrayList<Integer> numberOfBugFix;
 
-    public RepoFile(String name) {
-        this.name = name;                           // nome della classe
-        this.appearances = 1;                       // in quanti commit appare
-        this.releases = new ArrayList<>();          // in quante release appare
+    public ClassFile(String name) {
+        this.name = name;
+        this.appearances = 1;
+        this.releases = new ArrayList<>();
         this.paths = new ArrayList<>();
         this.LOCs = new ArrayList<>();
         this.touchedLOCs = new ArrayList<>();
@@ -26,6 +27,7 @@ public class RepoFile{
         this.nAuth = new ArrayList<>();
         this.revisions = new ArrayList<>();
         this.nFilesChanged = new ArrayList<>();
+        this.numberOfBugFix = new ArrayList<>();
     }
 
     public void setName(String name) {
@@ -34,10 +36,6 @@ public class RepoFile{
 
     public String getName() {
         return name;
-    }
-
-    public Boolean equals(String name){
-        return this.getName().equals(name);
     }
 
     public void insertRelease(String release) {
@@ -128,5 +126,18 @@ public class RepoFile{
 
     public ArrayList<Integer> getNFilesChanged() {
         return this.nFilesChanged;
+    }
+
+    public ArrayList<Integer> getNumberOfBugFix() {
+        return this.numberOfBugFix;
+    }
+
+    public void setNumberOfBugFix(Integer value, Integer releaseIndex) {
+        if (releaseIndex == this.numberOfBugFix.size()){
+            this.numberOfBugFix.add(value);
+        } else {
+            this.numberOfBugFix.remove(this.numberOfBugFix.size()-1);
+            this.numberOfBugFix.add(value);
+        }
     }
 }
