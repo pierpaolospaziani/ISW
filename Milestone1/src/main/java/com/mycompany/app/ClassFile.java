@@ -62,10 +62,10 @@ public class ClassFile {
     }
 
     public void insertLOCs(Integer newLOCs,Integer releaseNumber) {
-        if (releaseNumber == this.LOCs.size()){
+        if (releaseNumber > this.LOCs.size()){
             this.LOCs.add(newLOCs);
         } else {
-            Integer oldLOCs = this.getLOCs().get(releaseNumber);
+            Integer oldLOCs = this.getLOCs().get(releaseNumber-1);
             this.LOCs.remove(this.LOCs.size()-1);
             this.LOCs.add(oldLOCs + newLOCs);
         }
@@ -83,14 +83,14 @@ public class ClassFile {
         return this.touchedLOCs;
     }
 
-    public void insertChurn(int c) {
-        int churn;
-        if(c == 0){
-            churn = this.LOCs.get(c);
-        }else{
-            churn = Math.abs(this.LOCs.get(c) - this.LOCs.get(c-1));
+    public void insertChurn(Integer newChurn, Integer releaseNumber) {
+        if (releaseNumber > this.churn.size()){
+            this.churn.add(newChurn);
+        } else {
+            Integer oldChurn = this.getChurn().get(releaseNumber-1);
+            this.churn.remove(this.churn.size()-1);
+            this.churn.add(oldChurn + newChurn);
         }
-        this.churn.add(churn);
     }
 
     public ArrayList<Integer> getChurn() {
@@ -126,10 +126,12 @@ public class ClassFile {
     }
 
     public void incrementCommitsNumbers(Integer releaseNumber) {
-        if (releaseNumber == this.commitsNumbers.size()){
+        if (this.commitsNumbers.size() == 0) {
+            this.commitsNumbers.add(1);
+        } else if (this.commitsNumbers.size() < this.releases.size()){
             this.commitsNumbers.add(1);
         } else {
-            Integer value = this.getCommitsNumbers().get(releaseNumber);
+            Integer value = this.getCommitsNumbers().get(this.commitsNumbers.size()-1);
             this.commitsNumbers.remove(this.commitsNumbers.size()-1);
             this.commitsNumbers.add(value + 1);
         }
@@ -152,7 +154,7 @@ public class ClassFile {
     }
 
     public void setNumberOfBugFix(Integer value, Integer releaseIndex) {
-        if (releaseIndex == this.numberOfBugFix.size()){
+        if (releaseIndex > this.numberOfBugFix.size()){
             this.numberOfBugFix.add(value);
         } else {
             this.numberOfBugFix.remove(this.numberOfBugFix.size()-1);

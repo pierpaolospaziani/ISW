@@ -16,7 +16,6 @@ public class getReleaseInfo {
     public static ArrayList<LocalDateTime> releases;
     public static List<String> relNames = new ArrayList<>();    // lista dei nomi delle release ordinate
 
-
     /**
      * Popola le lista 'releases' e la ordina, ignorando quelle senza data
      * Popola 'relNames' e scarta l'ultimo 50% */
@@ -42,9 +41,6 @@ public class getReleaseInfo {
             }
         }
 
-        // ordina le release per data
-        releases.sort(LocalDateTime::compareTo);
-
         // compone il nome completo delle release
         for(LocalDateTime ldt : releases){
             for(LocalDateTime l : releaseNames.keySet()) {
@@ -53,7 +49,22 @@ public class getReleaseInfo {
             }
         }
 
-        // scarta l'ultimo 50% delle release
+        // ordina le release e scarta l'ultimo 50%
+        relNames.sort((s1, s2) -> {
+            String[] s1Parts = s1.split("-");
+            String[] s2Parts = s2.split("-");
+            String[] s1VersionParts = s1Parts[s1Parts.length - 1].split("\\.");
+            String[] s2VersionParts = s2Parts[s2Parts.length - 1].split("\\.");
+            int length = Math.min(s1VersionParts.length, s2VersionParts.length);
+            for (int i = 0; i < length; i++) {
+                int s1Part = Integer.parseInt(s1VersionParts[i]);
+                int s2Part = Integer.parseInt(s2VersionParts[i]);
+                if (s1Part != s2Part) {
+                    return s1Part - s2Part;
+                }
+            }
+            return s1VersionParts.length - s2VersionParts.length;
+        });
         int len = relNames.size();
         if (len > len / 2 + 1) {
             relNames.subList(len / 2 + 1, len).clear();
