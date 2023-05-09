@@ -4,9 +4,11 @@ import java.util.ArrayList;
 
 public class ClassFile {
     private String name;
-    private int appearances;
-    private ArrayList<String> releases;
-    private ArrayList<String> paths;
+    private String path;
+    private Boolean isDeleted;
+    private ArrayList<Integer> commitsNumbers;
+    private ArrayList<Integer> releases;
+    private ArrayList<String> releasesNames;
     private ArrayList<Integer> LOCs;
     private ArrayList<Integer> touchedLOCs;         /* between two release:  added + deleted */
     private ArrayList<Integer> churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
@@ -16,50 +18,61 @@ public class ClassFile {
     private ArrayList<Integer> nFilesChanged;
     private ArrayList<Integer> numberOfBugFix;
 
-    public ClassFile(String name) {
-        this.name = name;
-        this.appearances = 1;
-        this.releases = new ArrayList<>();
-        this.paths = new ArrayList<>();
-        this.LOCs = new ArrayList<>();
-        this.touchedLOCs = new ArrayList<>();
-        this.churn = new ArrayList<>();
-        this.nAuth = new ArrayList<>();
-        this.revisions = new ArrayList<>();
-        this.nFilesChanged = new ArrayList<>();
-        this.numberOfBugFix = new ArrayList<>();
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public ClassFile(String name, String path) {
+        this.name           = name;
+        this.path           = path;
+        this.isDeleted      = false;
+        this.commitsNumbers = new ArrayList<>();    // array conn il numero di commit relativo ad ogni release
+        this.releases       = new ArrayList<>();    // array con il numero di release in cui appare la classe
+        this.releasesNames  = new ArrayList<>();    // array con i nomi delle release in cui appare la classe
+        this.LOCs           = new ArrayList<>();    // array con il numero di LOC per release
+        this.touchedLOCs    = new ArrayList<>();    // array con il numero di LOC Touched per release
+        this.churn          = new ArrayList<>();    // array con il numero di churn per release
+        this.nAuth          = new ArrayList<>();    // array con il numero di autori globale
+//        this.revisions      = new ArrayList<>();
+        this.nFilesChanged  = new ArrayList<>();    // array con il numero medio di file cambiati insieme alla classe, per release
+        this.numberOfBugFix = new ArrayList<>();    // array con il numero di bug fix sulla classe, per release
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
-    public void insertRelease(String release) {
-        this.releases.add(release);
+    public void insertRelease(Integer release, String releaseName) {
+        if (!this.releases.contains(release)){
+            this.releases.add(release);
+            this.insertReleaseName(releaseName);
+        }
     }
 
-    public ArrayList<String> getReleases() {
-        return releases;
+    public ArrayList<Integer> getReleases() {
+        return this.releases;
     }
 
-    public void insertPath(String path) {
-        this.paths.add(path);
+    public void insertReleaseName(String releaseName) {
+        this.releasesNames.add(releaseName);
     }
 
-    public ArrayList<String> getPaths() {
-        return paths;
+    public ArrayList<String> getReleasesNames() {
+        return this.releasesNames;
     }
 
-    public void insertLOCs(int l) {
-        this.LOCs.add(l);
+    public String getPaths() {
+        return this.path;
+    }
+
+    public void insertLOCs(Integer newLOCs,Integer releaseNumber) {
+        if (releaseNumber == this.LOCs.size()){
+            this.LOCs.add(newLOCs);
+        } else {
+            Integer oldLOCs = this.getLOCs().get(releaseNumber);
+            this.LOCs.remove(this.LOCs.size()-1);
+            this.LOCs.add(oldLOCs + newLOCs);
+        }
     }
 
     public ArrayList<Integer> getLOCs() {
-        return LOCs;
+        return this.LOCs;
     }
 
     public void insertTouchedLOCs(Integer t) {
@@ -67,7 +80,7 @@ public class ClassFile {
     }
 
     public ArrayList<Integer> getTouchedLOCs() {
-        return touchedLOCs;
+        return this.touchedLOCs;
     }
 
     public void insertChurn(int c) {
@@ -81,7 +94,7 @@ public class ClassFile {
     }
 
     public ArrayList<Integer> getChurn() {
-        return churn;
+        return this.churn;
     }
 
     public void setRevisionFirstAppearance(int revisionFirstAppearance) {
@@ -89,7 +102,7 @@ public class ClassFile {
     }
 
     public int getRevisionFirstAppearance() {
-        return revisionFirstAppearance;
+        return this.revisionFirstAppearance;
     }
 
     public void insertAuth(int nauth) {
@@ -97,7 +110,7 @@ public class ClassFile {
     }
 
     public ArrayList<Integer> getnAuth() {
-        return nAuth;
+        return this.nAuth;
     }
 
     public void insertRevisions(Integer revision) {
@@ -108,17 +121,23 @@ public class ClassFile {
         return this.revisions;
     }
 
-    public int getAppearances() {
-        return appearances;
+    public ArrayList<Integer> getCommitsNumbers() {
+        return this.commitsNumbers;
     }
 
-    public void incAppearances() {
-        this.appearances += 1;
+    public void incrementCommitsNumbers(Integer releaseNumber) {
+        if (releaseNumber == this.commitsNumbers.size()){
+            this.commitsNumbers.add(1);
+        } else {
+            Integer value = this.getCommitsNumbers().get(releaseNumber);
+            this.commitsNumbers.remove(this.commitsNumbers.size()-1);
+            this.commitsNumbers.add(value + 1);
+        }
     }
 
-    public void decAppearances() {
-        this.appearances -= 1;
-    }
+//    public void decAppearances() {
+//        this.appearances -= 1;
+//    }
 
     public void insertChangedSetSize(Integer changeSetSize) {
         this.nFilesChanged.add(changeSetSize);
@@ -139,5 +158,13 @@ public class ClassFile {
             this.numberOfBugFix.remove(this.numberOfBugFix.size()-1);
             this.numberOfBugFix.add(value);
         }
+    }
+
+    public Boolean getDeleted() {
+        return this.isDeleted;
+    }
+
+    public void setDeleted() {
+        this.isDeleted = true;
     }
 }

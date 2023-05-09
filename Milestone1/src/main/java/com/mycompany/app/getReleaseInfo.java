@@ -14,8 +14,7 @@ public class getReleaseInfo {
     public static HashMap<LocalDateTime, String> releaseNames;
     public static HashMap<LocalDateTime, String> releaseID;
     public static ArrayList<LocalDateTime> releases;
-    public static Integer numVersions;
-    public static List<String> relNames = new ArrayList<>();    // lista dei nomi delle release ordinate, la uso in FilesRet.java per ordinarmi quelle di git
+    public static List<String> relNames = new ArrayList<>();    // lista dei nomi delle release ordinate
 
 
     /**
