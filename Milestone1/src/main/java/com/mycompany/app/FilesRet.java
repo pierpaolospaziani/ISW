@@ -33,7 +33,7 @@ public class FilesRet {
         try {
             fileWriter = new FileWriter(projName + "FilesInfo.csv");
 //            fileWriter.append("Version, Version_Name, Name, LOCs, Churn, Age, Number_of_Authors, Number of Revisions, Average Change Set\n");
-            fileWriter.append("Version, Version Name, Path, Name, LOCs, Churn, Age, Number of Revisions\n");
+            fileWriter.append("Version, Version Name, Path, LOCs, Churn, Age, Number of Revisions, Authors Number\n");
 
             for (int i = 0; i < relNames.size(); i++) {
                 for (ClassFile file : files) {
@@ -49,9 +49,6 @@ public class FilesRet {
                         fileWriter.append(file.getPath());
 
                         fileWriter.append(",");
-                        fileWriter.append(file.getName());
-
-                        fileWriter.append(",");
                         fileWriter.append(file.getLOCs().get(index).toString());
 
                         fileWriter.append(",");
@@ -60,14 +57,14 @@ public class FilesRet {
 //                        fileWriter.append(",");
 //                        fileWriter.append((Integer.toString(i - file.getRevisionFirstAppearance() + 1)));
 
-//                        fileWriter.append(",");
-//                        fileWriter.append((file.getnAuth().get(0).toString()));
-
                         fileWriter.append(",");
                         fileWriter.append(String.valueOf(index + 1));
 
                         fileWriter.append(",");
                         fileWriter.append(file.getCommitsNumbers().get(index).toString());
+
+                        fileWriter.append(",");
+                        fileWriter.append((file.getnAuth().get(index).toString()));
 
                         fileWriter.append("\n");
 
@@ -86,6 +83,7 @@ public class FilesRet {
             e.printStackTrace();
         } finally {
             try {
+                assert fileWriter != null;
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
@@ -101,13 +99,6 @@ public class FilesRet {
             if (f.getPath().contains(path)){
                 return files.indexOf(f);
             }
-//            if(f.getName().equals(name)){
-//                if(f.getPaths().size() > 0) {
-//                    if (path.equals(f.getPaths().get(f.getPaths().size()-1))) {
-//                        return files.indexOf(f);
-//                    }
-//                }
-//            }
         }
         return -1;
     }
@@ -222,23 +213,21 @@ public class FilesRet {
     }
 
 
-    public static int countAuthorsInFile(String filePath, String toCommit) throws IOException, GitAPIException {
-        int authorsCount = 0;
-
-        ObjectId to = repository.resolve(toCommit); //resolve the commit id from the tag name
-
+    public static int countAuthorsInFile(String filePath, String relName) throws GitAPIException, IOException {
+        ObjectId to = repository.resolve(relName);
         BlameResult blameResult = new Git(repository).blame()
                 .setFilePath(filePath)
                 .setStartCommit(to)
                 .call();
-
         Set<String> authors = new HashSet<>();
-        for (int i = 0; i < blameResult.getResultContents().size(); i++) {
-            authors.add(blameResult.getSourceAuthor(i).getName());
-            //System.out.println(blameResult.getSourceAuthor(i).getName());
+        try {
+            for (int i = 0; i < blameResult.getResultContents().size(); i++) {
+                authors.add(blameResult.getSourceAuthor(i).getName());
+            }
+            return authors.size();
+        } catch (Exception e) {
+            return 1;
         }
-        authorsCount = authors.size();
-        return authorsCount;
     }
 
 
@@ -527,6 +516,7 @@ public class FilesRet {
                                 classFile.getReleasesNames().add(relNames.get(releaseNumber-1));
                                 classFile.insertLOCs(countLOCs(treeWalk, classFile), releaseNumber);
                                 classFile.insertChurn(0, releaseNumber);
+                                classFile.insertAuth(countAuthorsInFile(classFile.getPath(), relNames.get(releaseNumber-1)));
                             }
                         }
                     } else {
@@ -558,12 +548,13 @@ public class FilesRet {
                                 classe.incrementCommitsNumbers(releaseNumber);
                                 classe.insertLOCs(countLOCs(treeWalk, classe), releaseNumber);
                                 classe.insertChurn(countChurn(tree, oldTree, classe), releaseNumber);
-
+                                classe.insertAuth(countAuthorsInFile(classe.getPath(), relNames.get(releaseNumber-1)));
                             }
                         }
                     }
                 }
             }
+
             for (ClassFile classFile : files){
                 // se il file non è stato eliminato && non è stato toccato mai nella release
                 if (classFile.getDeleted() && !classFile.getReleases().contains(releaseNumber)){
@@ -572,9 +563,9 @@ public class FilesRet {
                     classFile.getReleasesNames().add(relNames.get(releaseNumber-1));
                     classFile.insertLOCs(countLOCs(lastTreeWalk, classFile), releaseNumber);
                     classFile.insertChurn(0, releaseNumber);
+                    classFile.insertAuth(classFile.getnAuth().get(releaseNumber-1));
                 }
             }
-//            break;
         }
 
 //        countFixCommits(relNames.get(0),0);
