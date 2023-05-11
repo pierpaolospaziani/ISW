@@ -23,7 +23,7 @@ public class ClassFile {
         this.path           = path;
         this.isDeleted      = false;
         this.commitsNumbers = new ArrayList<>();    // array conn il numero di commit relativo ad ogni release
-        this.releases       = new ArrayList<>();    // array con il numero di release in cui appare la classe
+        this.releases       = new ArrayList<>();    // array con il numero delle release in cui appare la classe
         this.releasesNames  = new ArrayList<>();    // array con i nomi delle release in cui appare la classe
         this.LOCs           = new ArrayList<>();    // array con il numero di LOC per release
         this.touchedLOCs    = new ArrayList<>();    // array con il numero di LOC Touched per release
@@ -45,6 +45,10 @@ public class ClassFile {
         }
     }
 
+    public void removeRelease() {
+        this.releases.remove(this.releases.size()-1);
+    }
+
     public ArrayList<Integer> getReleases() {
         return this.releases;
     }
@@ -57,17 +61,16 @@ public class ClassFile {
         return this.releasesNames;
     }
 
-    public String getPaths() {
+    public String getPath() {
         return this.path;
     }
 
-    public void insertLOCs(Integer newLOCs,Integer releaseNumber) {
+    public void insertLOCs(Integer newLOCs, Integer releaseNumber) {
         if (releaseNumber > this.LOCs.size()){
             this.LOCs.add(newLOCs);
         } else {
-            Integer oldLOCs = this.getLOCs().get(releaseNumber-1);
             this.LOCs.remove(this.LOCs.size()-1);
-            this.LOCs.add(oldLOCs + newLOCs);
+            this.LOCs.add(newLOCs);
         }
     }
 

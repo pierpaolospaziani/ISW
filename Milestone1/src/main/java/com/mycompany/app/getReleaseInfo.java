@@ -1,5 +1,6 @@
 package com.mycompany.app;
 
+import org.eclipse.jgit.lib.ObjectId;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,6 +42,8 @@ public class getReleaseInfo {
             }
         }
 
+        releases.sort(LocalDateTime::compareTo);
+
         // compone il nome completo delle release
         for(LocalDateTime ldt : releases){
             for(LocalDateTime l : releaseNames.keySet()) {
@@ -65,10 +68,6 @@ public class getReleaseInfo {
             }
             return s1VersionParts.length - s2VersionParts.length;
         });
-        int len = relNames.size();
-        if (len > len / 2 + 1) {
-            relNames.subList(len / 2 + 1, len).clear();
-        }
     }
 
     public static void addRelease(String strDate, String name, String id) {
