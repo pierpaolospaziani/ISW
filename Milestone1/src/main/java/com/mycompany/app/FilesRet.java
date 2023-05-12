@@ -27,13 +27,14 @@ public class FilesRet {
     public static String repo_path = "/Users/pierpaolospaziani/Downloads/bookkeeper/.git";
     public static String projName = "BOOKKEEPER";
     public static Repository repository;
+    public static ArrayList<String> issueList;
 
     public static void writeOnFile(){
         FileWriter fileWriter = null;
         try {
             fileWriter = new FileWriter(projName + "FilesInfo.csv");
 //            fileWriter.append("Version, Version_Name, Name, LOCs, Churn, Age, Number_of_Authors, Number of Revisions, Average Change Set\n");
-            fileWriter.append("Version, Version Name, Path, LOCs, Churn, Age, Number of Revisions, Authors Number\n");
+            fileWriter.append("Version, Version Name, Path, LOCs, LOCs Touched, Churn, Age, Number of Revisions, Authors Number, Bugfix\n");
 
             for (int i = 0; i < relNames.size(); i++) {
                 for (ClassFile file : files) {
@@ -52,6 +53,9 @@ public class FilesRet {
                         fileWriter.append(file.getLOCs().get(index).toString());
 
                         fileWriter.append(",");
+                        fileWriter.append(file.getTouchedLOCs().get(index).toString());
+
+                        fileWriter.append(",");
                         fileWriter.append(file.getChurn().get(index).toString());
 
 //                        fileWriter.append(",");
@@ -66,30 +70,24 @@ public class FilesRet {
                         fileWriter.append(",");
                         fileWriter.append((file.getnAuth().get(index).toString()));
 
-                        fileWriter.append("\n");
+                        fileWriter.append(",");
+                        fileWriter.append((file.getNumberOfBugFix().get(index).toString()));
+//                        int somma = 0;
+//                        for (int j = 0; j < index; j++) {
+//                            somma += file.getNumberOfBugFix().get(j);
+//                        }
+//                        fileWriter.append(String.valueOf(somma));
 
-//                        file.getPaths().remove(0);
-//                        file.getLOCs().remove(0);
-//                        file.getChurn().remove(0);
-//                        file.getnAuth().remove(0);
-//
-//                        file.decAppearances();
+                        fileWriter.append("\n");
                     }
                 }
             }
             System.out.println("File correctly written.");
+            fileWriter.flush();
+            fileWriter.close();
         } catch (Exception e) {
             System.out.println("Error in csv writer.");
             e.printStackTrace();
-        } finally {
-            try {
-                assert fileWriter != null;
-                fileWriter.flush();
-                fileWriter.close();
-            } catch (IOException e) {
-                System.out.println("Error while flushing/closing fileWriter.");
-                e.printStackTrace();
-            }
         }
     }
 
@@ -185,7 +183,6 @@ public class FilesRet {
             try {
                 currLines = countLines(repository.open(tw.getObjectId(1)).openStream());
             } catch (Exception e){
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ FILE CANCELLATO !!!");
                 classe.setDeleted();
                 classe.removeRelease();
             }
@@ -193,9 +190,33 @@ public class FilesRet {
                 prevLines = countLines(repository.open(tw.getObjectId(0)).openStream());
             } catch (Exception ignored){}
         }
-//        System.out.println("prevLines: " + prevLines);
-//        System.out.println("currLines: " + currLines);
         return Math.abs(currLines - prevLines);
+    }
+
+
+    public static int countLOCTouched(RevTree newTree, RevTree oldTree, ClassFile classe) throws IOException {
+
+        int prevLines = 0;
+        int currLines = 0;
+
+        try (TreeWalk tw = new TreeWalk(repository)) {
+            tw.addTree(oldTree);
+            tw.addTree(newTree);
+            tw.setRecursive(true);
+            tw.setFilter(PathFilter.create(classe.getPath()));
+            tw.next();
+            // se il file è stato cancellato
+            try {
+                currLines = countLines(repository.open(tw.getObjectId(1)).openStream());
+            } catch (Exception e){
+                classe.setDeleted();
+                classe.removeRelease();
+            }
+            try {
+                prevLines = countLines(repository.open(tw.getObjectId(0)).openStream());
+            } catch (Exception ignored){}
+        }
+        return currLines + prevLines;
     }
 
 
@@ -213,10 +234,10 @@ public class FilesRet {
     }
 
 
-    public static int countAuthorsInFile(String filePath, String relName) throws GitAPIException, IOException {
+    public static int countAuthorsInFile(ClassFile classe, String relName) throws GitAPIException, IOException {
         ObjectId to = repository.resolve(relName);
         BlameResult blameResult = new Git(repository).blame()
-                .setFilePath(filePath)
+                .setFilePath(classe.getPath())
                 .setStartCommit(to)
                 .call();
         Set<String> authors = new HashSet<>();
@@ -226,12 +247,16 @@ public class FilesRet {
             }
             return authors.size();
         } catch (Exception e) {
-            return 1;
+            int authNumber = 1;
+            if (classe.getnAuth().size() >= (relNames.indexOf(relName)+1)){
+                authNumber += classe.getnAuth().get(relNames.indexOf(relName));
+            }
+            return authNumber;
         }
     }
 
 
-    /** Ritorna, per la release, quanti file mediamente vengono toccati nei commit insieme al file specificato */
+    /** Ritorna in una release, quanti file mediamente vengono toccati nei commit insieme al file specificato */
     public static int nFileCommittedTogether(Repository repository, String file, String currentRelease) throws IOException, GitAPIException{
 
         RevWalk walk = new RevWalk(repository);
@@ -284,72 +309,17 @@ public class FilesRet {
     }
 
 
-    public static int countCommits(Repository repository, String file, String currentRelease) throws IOException, GitAPIException {
-        RevWalk walk = new RevWalk(repository);
-        Git git = new Git(repository);
-        int c = 0;
-
-        ObjectReader reader = repository.newObjectReader();
-        CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-        CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-
-        // prendi gli object id delle release
-        ObjectId objNewId = repository.resolve(currentRelease);
-
-        RevCommit curRelCommit = walk.parseCommit(objNewId);
-
-        // fai il log dell'ultima release e prendi tutti i commit
-        LogCommand log = git.log().add(curRelCommit);
-
-        Iterable<RevCommit> commits = log.call();
-
-        ArrayList<RevCommit> relCommits = new ArrayList<>();
-        for(RevCommit com : commits){
-            relCommits.add(com);
-        }
-
-        for(RevCommit commit : relCommits) {
-            if(relCommits.indexOf(commit) == relCommits.size()-1)
-                break;
-
-            RevTree tree1 = commit.getTree();
-            newTreeIter.reset(reader, tree1);
-
-            RevTree tree2 = relCommits.get(relCommits.indexOf(commit) + 1).getTree();
-            oldTreeIter.reset(reader, tree2);
-
-            DiffFormatter diffFormatter = new DiffFormatter( DisabledOutputStream.INSTANCE );
-            diffFormatter.setRepository(repository);
-            List<DiffEntry> entries = diffFormatter.scan(oldTreeIter, newTreeIter);
-
-            //System.out.println(commit + "     c: " + c);
-            for(DiffEntry entry : entries) {
-                if(entry.getNewPath().equals(file)){
-                    //System.out.println(entry.getNewPath());
-                    c++;
-                }
-
-            }
-        }
-//        System.out.println("Numero di commit di un file in una release: " + c);
-        return c;
+    /** Ritorna in una release, quanti bugfix sono stati effettuati sul file */
+    public static Boolean isBufFix(RevCommit commit) {
+        String message = commit.getShortMessage().replace("  ", "");
+        return message.startsWith("BOOKKEEPER-") && issueList.contains(message.split(":")[0]);
     }
 
-
-    public static void countFixCommits(String releaseName, int releaseIndex) throws IOException, GitAPIException {
-
-        RevWalk walk = new RevWalk(repository);
-        Git git = new Git(repository);
-
-        ObjectReader reader = repository.newObjectReader();
-        CanonicalTreeParser treeIter = new CanonicalTreeParser();
-
-        // JIRA: costruisce l'ArrayList 'issuesListJira' che contiene tutti i ticket BUG chiusi e fixati
+    /** JIRA: costruisce l'ArrayList che contiene tutti i ticket BUG chiusi e fixati*/
+    public static ArrayList<String> retrieveIssues() throws IOException {
         ArrayList<String> issuesListJira = new ArrayList<>();
         int j, i = 0, total;
         do {
-            // Get JSON API for closed bugs w/ AV in the project
-            // Only gets a max of 1000 at a time, so must do this multiple times if bugs >1000
             j = i + 1000;
             String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
                     + projName + "%22AND%22issueType%22=%22Bug%22AND(%22status%22=%22closed%22OR"
@@ -359,86 +329,11 @@ public class FilesRet {
             JSONArray issues = json.getJSONArray("issues");
             total = json.getInt("total");
             for (; i < total && i < j; i++) {
-                //Iterate through each bug
                 String key = issues.getJSONObject(i % 1000).get("key").toString();
                 issuesListJira.add(key);
             }
         } while (i < total);
-
-        // GIT: costruisce un'ArrayList 'commits' che contiene tutti i commit della release
-        ObjectId objId = repository.resolve(releaseName);
-        RevCommit curRelCommit = walk.parseCommit(objId);
-        LogCommand log = git.log().add(curRelCommit);
-        Iterable<RevCommit> iterableCommits = log.call();
-        ArrayList<RevCommit> commits = new ArrayList<>();
-        iterableCommits.forEach(commits::add);
-
-        // GIT: costruisce l'array 'issueMessages' che contiene i nomi dei commit relativi a bugfix (es. BOOKKEEPER-123)
-        //      e l'array 'commitsList' che univocamente associa i relativi commit effettivi
-        ArrayList<String> commitMessages  = new ArrayList<>();
-        ArrayList<String> issueMessages   = new ArrayList<>();
-        ArrayList<RevCommit> commitsList  = new ArrayList<>();
-        int issuesIndex = 0;
-        for(RevCommit commit : commits) {
-            String message = commit.getShortMessage().replace("  ", "");
-            if (message.startsWith("BOOKKEEPER-")){
-                commitMessages.add(message);
-                String[] listOfMessages = commitMessages.get(issuesIndex).split(":");
-                issueMessages.add(listOfMessages[0]);
-                issuesIndex++;
-                commitsList.add(commit);
-            }
-        }
-
-        // conteggio dei commit bugfix presenti nella release
-        for (String message : issueMessages){
-            if (issuesListJira.contains(message)){
-                RevCommit commit = commitsList.get(issueMessages.indexOf(message));
-                RevTree tree = commit.getTree();
-                TreeWalk treeWalk = new TreeWalk(repository);
-                treeWalk.addTree(tree);
-                treeWalk.setRecursive(true);
-
-                try (RevWalk revWalk = new RevWalk(repository)) {
-                    RevCommit parentCommit = revWalk.parseCommit(commit.getParent(0).getId());
-                    CanonicalTreeParser newTree = new CanonicalTreeParser();
-                    newTree.reset(repository.newObjectReader(), commit.getTree().getId());
-
-                    CanonicalTreeParser oldTree = new CanonicalTreeParser();
-                    oldTree.reset(repository.newObjectReader(), parentCommit.getTree().getId());
-
-                    List<DiffEntry> diffs = git.diff()
-                            .setNewTree(newTree)
-                            .setOldTree(oldTree)
-                            .call();
-
-                    List<String> filePaths = new ArrayList<>();
-
-                    for (DiffEntry diff : diffs) {
-                        if(diff.getNewPath().contains(".java") && !diff.getNewPath().contains("/test")) {
-                            filePaths.add(diff.getNewPath());
-
-//                            System.out.println(message + " :: " + filePaths);
-
-                            String[] tkn = filePaths.get(0).split("/");
-                            String filename = tkn[tkn.length-1];
-
-//                            System.out.println(message + " :: " + filename + "\n");
-
-                            for (ClassFile classe : files){
-                                if (classe.getName().equals(filename)){
-                                    if (classe.getNumberOfBugFix().size() == 0){
-                                        classe.setNumberOfBugFix(0, releaseIndex);
-                                    }
-                                    classe.setNumberOfBugFix(classe.getNumberOfBugFix().get(releaseIndex) + 1, releaseIndex);
-                                }
-                            }
-                        }
-//                        break;
-                    }
-                }
-            }
-        }
+        return issuesListJira;
     }
 
     public static void main(String[] args) throws Exception {
@@ -456,6 +351,7 @@ public class FilesRet {
 
 //      // JIRA: prendo la lista di release (ordinata)
         retrieveReleases();
+        issueList = retrieveIssues();
 
         // tolgo i branch e il 50%
         for (int i = 1; i <= relNames.size(); i++) {
@@ -515,8 +411,10 @@ public class FilesRet {
                                 classFile.getReleases().add(releaseNumber);
                                 classFile.getReleasesNames().add(relNames.get(releaseNumber-1));
                                 classFile.insertLOCs(countLOCs(treeWalk, classFile), releaseNumber);
+                                classFile.insertTouchedLOCs(0, releaseNumber);
                                 classFile.insertChurn(0, releaseNumber);
-                                classFile.insertAuth(countAuthorsInFile(classFile.getPath(), relNames.get(releaseNumber-1)));
+                                classFile.insertAuth(countAuthorsInFile(classFile, relNames.get(releaseNumber-1)));
+                                classFile.increaseNumberOfBugFix(releaseNumber, isBufFix(commit));
                             }
                         }
                     } else {
@@ -547,8 +445,10 @@ public class FilesRet {
                                 classe.insertRelease(releaseNumber, relNames.get(releaseCommits.indexOf(commitsPerRelease)));
                                 classe.incrementCommitsNumbers(releaseNumber);
                                 classe.insertLOCs(countLOCs(treeWalk, classe), releaseNumber);
+                                classe.insertTouchedLOCs(countLOCTouched(tree, oldTree, classe), releaseNumber);
                                 classe.insertChurn(countChurn(tree, oldTree, classe), releaseNumber);
-                                classe.insertAuth(countAuthorsInFile(classe.getPath(), relNames.get(releaseNumber-1)));
+                                classe.insertAuth(countAuthorsInFile(classe, relNames.get(releaseNumber-1)));
+                                classe.increaseNumberOfBugFix(releaseNumber, isBufFix(commit));
                             }
                         }
                     }
@@ -562,8 +462,10 @@ public class FilesRet {
                     classFile.getReleases().add(releaseNumber);
                     classFile.getReleasesNames().add(relNames.get(releaseNumber-1));
                     classFile.insertLOCs(countLOCs(lastTreeWalk, classFile), releaseNumber);
+                    classFile.insertTouchedLOCs(0, releaseNumber);
                     classFile.insertChurn(0, releaseNumber);
                     classFile.insertAuth(classFile.getnAuth().get(releaseNumber-1));
+                    classFile.setNoBugFix();
                 }
             }
         }
@@ -576,11 +478,12 @@ public class FilesRet {
 //        }
 
         writeOnFile();
+
         repository.close();
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
 
-        System.out.println("Tempo di esecuzione: " + duration/1000000 + " millisecondi");
+        System.out.println("Tempo di esecuzione: " + (float) duration/1000000000 + " secondi");
     }
 }

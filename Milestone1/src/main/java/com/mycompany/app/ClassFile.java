@@ -14,7 +14,6 @@ public class ClassFile {
     private ArrayList<Integer> churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
     private int revisionFirstAppearance;
     private ArrayList<Integer> nAuth;
-    private ArrayList<Integer> revisions;
     private ArrayList<Integer> nFilesChanged;
     private ArrayList<Integer> numberOfBugFix;
 
@@ -29,7 +28,6 @@ public class ClassFile {
         this.touchedLOCs    = new ArrayList<>();    // array con il numero di LOC Touched per release
         this.churn          = new ArrayList<>();    // array con il numero di churn per release
         this.nAuth          = new ArrayList<>();    // array con il numero di autori globale
-//        this.revisions      = new ArrayList<>();
         this.nFilesChanged  = new ArrayList<>();    // array con il numero medio di file cambiati insieme alla classe, per release
         this.numberOfBugFix = new ArrayList<>();    // array con il numero di bug fix sulla classe, per release
     }
@@ -78,8 +76,14 @@ public class ClassFile {
         return this.LOCs;
     }
 
-    public void insertTouchedLOCs(Integer t) {
-        this.touchedLOCs.add(t);
+    public void insertTouchedLOCs(Integer newChurn, Integer releaseNumber) {
+        if (releaseNumber > this.touchedLOCs.size()){
+            this.touchedLOCs.add(newChurn);
+        } else {
+            Integer oldChurn = this.getChurn().get(releaseNumber-1);
+            this.touchedLOCs.remove(this.touchedLOCs.size()-1);
+            this.touchedLOCs.add(oldChurn + newChurn);
+        }
     }
 
     public ArrayList<Integer> getTouchedLOCs() {
@@ -116,14 +120,6 @@ public class ClassFile {
         return this.nAuth;
     }
 
-    public void insertRevisions(Integer revision) {
-        this.revisions.add(revision);
-    }
-
-    public ArrayList<Integer> getRevisions() {
-        return this.revisions;
-    }
-
     public ArrayList<Integer> getCommitsNumbers() {
         return this.commitsNumbers;
     }
@@ -156,13 +152,22 @@ public class ClassFile {
         return this.numberOfBugFix;
     }
 
-    public void setNumberOfBugFix(Integer value, Integer releaseIndex) {
+    public void increaseNumberOfBugFix(Integer releaseIndex, Boolean isBugFix) {
         if (releaseIndex > this.numberOfBugFix.size()){
-            this.numberOfBugFix.add(value);
-        } else {
+            if (isBugFix){
+                this.numberOfBugFix.add(1);
+            } else {
+                this.numberOfBugFix.add(0);
+            }
+        } else if (isBugFix){
+            int newNumber = this.getNumberOfBugFix().get(releaseIndex-1);
             this.numberOfBugFix.remove(this.numberOfBugFix.size()-1);
-            this.numberOfBugFix.add(value);
+            this.numberOfBugFix.add(newNumber);
         }
+    }
+
+    public void setNoBugFix() {
+        this.numberOfBugFix.add(0);
     }
 
     public Boolean getDeleted() {
