@@ -29,19 +29,17 @@ public class FilesRet {
     public static Repository repository;
     public static ArrayList<String> issueList;
 
-    public static void writeOnFile(){
-        FileWriter fileWriter = null;
-        try {
-            fileWriter = new FileWriter(projName + "FilesInfo.csv");
-//            fileWriter.append("Version, Version_Name, Name, LOCs, Churn, Age, Number_of_Authors, Number of Revisions, Average Change Set\n");
+    public static void writeOnFile() throws IOException {
+        try (FileWriter fileWriter = new FileWriter(projName + "FilesInfo.csv")) {
+            //            fileWriter.append("Version, Version_Name, Name, LOCs, Churn, Age, Number_of_Authors, Number of Revisions, Average Change Set\n");
             fileWriter.append("Version, Version Name, Path, LOCs, LOCs Touched, Churn, Age, Number of Revisions, Authors Number, Bugfix\n");
 
             for (int i = 0; i < releaseNames.size(); i++) {
                 for (ClassFile file : files) {
-                    if (file.getReleases().contains(i+1)){
-                        int index = file.getReleases().indexOf(i+1);
+                    if (file.getReleases().contains(i + 1)) {
+                        int index = file.getReleases().indexOf(i + 1);
 
-                        fileWriter.append(Integer.toString(i+1));
+                        fileWriter.append(Integer.toString(i + 1));
 
                         fileWriter.append(",");
                         fileWriter.append(releaseNames.get(i));
@@ -100,62 +98,6 @@ public class FilesRet {
         }
         return -1;
     }
-
-
-    /** Analizza ogni file per ogni commit */
-//    public static void listRepositoryContents(String releaseName, int releaseNumber) throws IOException, GitAPIException {
-//        ObjectId objId = repository.resolve(releaseName);
-//        if (objId==null) return;
-//
-//        // il RevWalk consente di novigare sui commit
-//        RevWalk walk = new RevWalk(repository);
-//        // prende un determinato commit
-//        RevCommit commit = walk.parseCommit(objId.toObjectId());
-//        // prende l'albero di directory e file che costituiscono lo stato del repository al momento del commit
-//        RevTree tree = commit.getTree();
-//
-//        // prende un TreeWalk per iterare su tutti i file nell'albero ricorsivamente
-//        TreeWalk treeWalk = new TreeWalk(repository);
-//        treeWalk.addTree(tree);
-//        treeWalk.setRecursive(true);
-//
-//        int fileIndex;
-//        String[] tkns;
-//
-//        while (treeWalk.next()) {
-//            if(treeWalk.getPathString().contains(".java") && !treeWalk.getPathString().contains("/test")) {
-//
-//                System.out.println(releaseName + " :: " + treeWalk.getPathString());
-//
-//                tkns = treeWalk.getPathString().split("/");
-//                fileIndex = getFileIndex(tkns[tkns.length - 1], treeWalk.getPathString());
-//
-//                if (fileIndex >= 0) {
-//                    // se il file era già presente ...
-//                    files.get(fileIndex).incAppearances();
-//                    files.get(fileIndex).insertRelease(releaseName);
-//                    files.get(fileIndex).insertPath(treeWalk.getPathString());
-//                    files.get(fileIndex).insertLOCs(countLOCs(treeWalk.getPathString(), releaseName));
-//                    files.get(fileIndex).insertChurn(files.get(fileIndex).getReleases().size() - 1);
-//                    files.get(fileIndex).insertAuth(countAuthorsInFile(treeWalk.getPathString(), relNames.get(releaseNumber-1)));
-//                    files.get(fileIndex).insertRevisions(countCommits(repository, treeWalk.getPathString(), releaseName));
-//                    files.get(fileIndex).insertChangedSetSize(nFileCommittedTogether(repository, treeWalk.getPathString(), releaseName));
-//                } else {
-//                    // ... se il file è nuovo
-//                    ClassFile classFile = new ClassFile(tkns[tkns.length - 1]);
-//                    classFile.insertRelease(releaseName);
-//                    classFile.insertPath(treeWalk.getPathString());
-//                    classFile.insertLOCs(countLOCs(treeWalk.getPathString(), releaseName));
-//                    classFile.insertChurn(0);
-//                    classFile.setRevisionFirstAppearance(releaseNumber);
-//                    classFile.insertAuth(countAuthorsInFile(treeWalk.getPathString(), relNames.get(releaseNumber-1)));
-//                    classFile.insertRevisions(countCommits(repository, treeWalk.getPathString(), releaseName));
-//                    classFile.insertChangedSetSize(nFileCommittedTogether(repository, treeWalk.getPathString(), releaseName));
-//                    files.add(classFile);
-//                }
-//            }
-//        }
-//    }
 
 
     public static int countLOCs(TreeWalk treeWalk, ClassFile classe) throws IOException {
@@ -263,49 +205,50 @@ public class FilesRet {
         Git git = new Git(repository);
         int count = 0; // number of files changed into a commit to return
 
-        ObjectReader reader = repository.newObjectReader();
-        CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-        CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+        try (ObjectReader reader = repository.newObjectReader()){
+            CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+            CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
 
-        // prendi gli object id delle release
-        ObjectId objId = repository.resolve(currentRelease);
-        RevCommit curRelCommit = walk.parseCommit(objId);
+            // prendi gli object id delle release
+            ObjectId objId = repository.resolve(currentRelease);
+            RevCommit curRelCommit = walk.parseCommit(objId);
 
-        // fai il log dell'ultima release e prendi tutti i commit
-        LogCommand log = git.log().add(curRelCommit);
+            // fai il log dell'ultima release e prendi tutti i commit
+            LogCommand log = git.log().add(curRelCommit);
 
-        Iterable<RevCommit> commits = log.call();
+            Iterable<RevCommit> commits = log.call();
 
-        ArrayList<RevCommit> relCommits = new ArrayList<>();
-        for(RevCommit com : commits){
-            relCommits.add(com);
-        }
+            ArrayList<RevCommit> relCommits = new ArrayList<>();
+            for (RevCommit com : commits) {
+                relCommits.add(com);
+            }
 
-        int commitsNumber = 0;  // numero di commit in cui è stata modificata una classe
-        for(RevCommit commit : relCommits) {
-            if(relCommits.indexOf(commit) == relCommits.size()-1)
-                break;
-
-            RevTree tree1 = commit.getTree();
-            newTreeIter.reset(reader, tree1);
-
-            RevTree tree2 = relCommits.get(relCommits.indexOf(commit) + 1).getTree();
-            oldTreeIter.reset(reader, tree2);
-
-            DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE);
-            diffFormatter.setRepository(repository);
-            List<DiffEntry> entries = diffFormatter.scan(oldTreeIter, newTreeIter);     // classi cambiate tra due commit
-
-            for(DiffEntry entry : entries) {
-                if(entry.getNewPath().equals(file)) {
-                    count += entries.size();
-                    commitsNumber++;
+            int commitsNumber = 0;  // numero di commit in cui è stata modificata una classe
+            for (RevCommit commit : relCommits) {
+                if (relCommits.indexOf(commit) == relCommits.size() - 1)
                     break;
+
+                RevTree tree1 = commit.getTree();
+                newTreeIter.reset(reader, tree1);
+
+                RevTree tree2 = relCommits.get(relCommits.indexOf(commit) + 1).getTree();
+                oldTreeIter.reset(reader, tree2);
+
+                DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE);
+                diffFormatter.setRepository(repository);
+                List<DiffEntry> entries = diffFormatter.scan(oldTreeIter, newTreeIter);     // classi cambiate tra due commit
+
+                for (DiffEntry entry : entries) {
+                    if (entry.getNewPath().equals(file)) {
+                        count += entries.size();
+                        commitsNumber++;
+                        break;
+                    }
                 }
             }
+            //        System.out.println("Media di file toccati in ogni commit: " + count/commitsNumber);
+            return count / commitsNumber;
         }
-//        System.out.println("Media di file toccati in ogni commit: " + count/commitsNumber);
-        return count/commitsNumber;
     }
 
 
