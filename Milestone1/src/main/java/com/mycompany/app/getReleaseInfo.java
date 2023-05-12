@@ -1,6 +1,5 @@
 package com.mycompany.app;
 
-import org.eclipse.jgit.lib.ObjectId;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,10 +11,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class getReleaseInfo {
-    public static HashMap<LocalDateTime, String> releaseNames;
-    public static HashMap<LocalDateTime, String> releaseID;
-    public static ArrayList<LocalDateTime> releases;
-    public static List<String> relNames = new ArrayList<>();    // lista dei nomi delle release ordinate
+    public static HashMap<LocalDateTime, String> releaseHashMap;
+    public static ArrayList<LocalDateTime> releasesDateTimes;
+    public static List<String> releaseNames = new ArrayList<>();    // lista dei nomi delle release ordinate
 
     /**
      * Popola le lista 'releases' e la ordina, ignorando quelle senza data
@@ -26,34 +24,30 @@ public class getReleaseInfo {
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
 
-        releases = new ArrayList<>();
-        releaseNames = new HashMap<>();
-        releaseID = new HashMap<>();
+        releasesDateTimes = new ArrayList<>();
+        releaseHashMap = new HashMap<>();
 
         for (int i = 0; i < versions.length(); i++) {
             String name = "";
-            String id = "";
             if (versions.getJSONObject(i).has("releaseDate")) {
                 if (versions.getJSONObject(i).has("name"))
                     name = versions.getJSONObject(i).get("name").toString();
-                if (versions.getJSONObject(i).has("id"))
-                    id = versions.getJSONObject(i).get("id").toString();
-                addRelease(versions.getJSONObject(i).get("releaseDate").toString(), name, id);
+                addRelease(versions.getJSONObject(i).get("releaseDate").toString(), name);
             }
         }
 
-        releases.sort(LocalDateTime::compareTo);
+        releasesDateTimes.sort(LocalDateTime::compareTo);
 
         // compone il nome completo delle release
-        for(LocalDateTime ldt : releases){
-            for(LocalDateTime l : releaseNames.keySet()) {
+        for(LocalDateTime ldt : releasesDateTimes){
+            for(LocalDateTime l : releaseHashMap.keySet()) {
                 if(l.equals(ldt))
-                    relNames.add("refs/tags/release-" + releaseNames.get(l));
+                    releaseNames.add("refs/tags/release-" + releaseHashMap.get(l));
             }
         }
 
-        // ordina le release e scarta l'ultimo 50%
-        relNames.sort((s1, s2) -> {
+        // ordina le release
+        releaseNames.sort((s1, s2) -> {
             String[] s1Parts = s1.split("-");
             String[] s2Parts = s2.split("-");
             String[] s1VersionParts = s1Parts[s1Parts.length - 1].split("\\.");
@@ -70,13 +64,12 @@ public class getReleaseInfo {
         });
     }
 
-    public static void addRelease(String strDate, String name, String id) {
+    public static void addRelease(String strDate, String name) {
         LocalDate date = LocalDate.parse(strDate);
         LocalDateTime dateTime = date.atStartOfDay();
-        if (!releases.contains(dateTime))
-            releases.add(dateTime);
-        releaseNames.put(dateTime, name);
-        releaseID.put(dateTime, id);
+        if (!releasesDateTimes.contains(dateTime))
+            releasesDateTimes.add(dateTime);
+        releaseHashMap.put(dateTime, name);
     }
 
     public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
