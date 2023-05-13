@@ -19,9 +19,9 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 public class Release {
-    private String name;
-    private List<RevCommit> commits;
-    private List<ClassFile> files;
+    private final String name;
+    private final List<RevCommit> commits;
+    private final List<ClassFile> files;
 
     public Release(String name, Repository repository){
         this.name    = name;
@@ -63,7 +63,7 @@ public class Release {
         }
     }
 
-    public ArrayList<ClassFile> retrieveFiles(Repository repository){
+    public List<ClassFile> retrieveFiles(Repository repository){
         try {
             ArrayList<ClassFile> fileList = new ArrayList<>();
             ObjectId releaseCommitId = repository.resolve(this.name);

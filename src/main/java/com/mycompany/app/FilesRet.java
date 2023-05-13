@@ -5,6 +5,9 @@ import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.CorruptObjectException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.*;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -21,12 +24,12 @@ import java.util.*;
 import static com.mycompany.app.getReleaseInfo.*;
 
 public class FilesRet {
-    public static String repoPath = "/Users/pierpaolospaziani/Downloads/bookkeeper/.git";
-    public static String projName = "BOOKKEEPER";
-    public static ArrayList<String> issueList;
-    public static ArrayList<Release> releaseList;
-    public static Repository repository;
-    public static Git git;
+    public static final String repoPath = "/Users/pierpaolospaziani/Downloads/bookkeeper/.git";
+    public static final String projName = "BOOKKEEPER";
+    public static List<String> issueList = null;
+    public static List<Release> releaseList = null;
+    public static Repository repository = null;
+    public static Git git = null;
 
     public static void writeOnFile() throws IOException {
         try (FileWriter fileWriter = new FileWriter(projName + "FilesInfo.csv")) {
@@ -77,11 +80,9 @@ public class FilesRet {
                     fileWriter.append("\n");
                 }
             }
-            System.out.println("File correctly written.");
             fileWriter.flush();
-            fileWriter.close();
         } catch (Exception e) {
-            System.out.println("Error in csv writer.");
+            throw new RuntimeException(e);
         }
     }
 
@@ -114,7 +115,6 @@ public class FilesRet {
             tw.next();
             int currLines = countLines(repository.open(tw.getObjectId(0)).openStream());
             int prevLines = 0;
-            System.out.println();
             if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(repository.open(tw.getObjectId(1)).openStream());
             return currLines + prevLines;
         } catch (Exception e){
@@ -199,9 +199,11 @@ public class FilesRet {
 
 
     /** JIRA: costruisce l'ArrayList che contiene tutti i ticket BUG chiusi e fixati*/
-    public static ArrayList<String> retrieveIssues() throws IOException {
+    public static List<String> retrieveIssues() throws IOException {
         ArrayList<String> issuesListJira = new ArrayList<>();
-        int j, i = 0, total;
+        int j;
+        int i = 0;
+        int total;
         do {
             j = i + 1000;
             String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
@@ -221,7 +223,7 @@ public class FilesRet {
 
 
     /** GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release*/
-    public static ArrayList<ArrayList<RevCommit>> getCommitsPerRelease(){
+    public static List<ArrayList<RevCommit>> getCommitsPerRelease(){
         ArrayList<ArrayList<RevCommit>> releaseCommits = new ArrayList<>();
         ArrayList<RevCommit> commits = new ArrayList<>();
         for (Release release : releaseList) {
@@ -248,24 +250,7 @@ public class FilesRet {
     }
 
 
-    public static void main(String[] args) throws Exception {
-
-        long startTime = System.nanoTime();
-
-        FileRepositoryBuilder builder = new FileRepositoryBuilder();
-        repository = builder
-                .setGitDir(new File(repoPath)).readEnvironment()
-                .findGitDir().build();
-
-        git = new Git(repository);
-
-        // JIRA: prendo la lista di release (ordinata)
-        releaseList = retrieveReleases(repository);
-        // JIRA: prendo la lista di issue bug fix
-        issueList = retrieveIssues();
-
-        // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
-        ArrayList<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
+    public static void doMetrics(List<ArrayList<RevCommit>> releaseCommits){
 
         for (ArrayList<RevCommit> commitsPerRelease : releaseCommits){
             int releaseNumber = releaseCommits.indexOf(commitsPerRelease) + 1;
@@ -313,9 +298,34 @@ public class FilesRet {
                             }
                         }
                     }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
+    }
+
+
+    public static void main(String[] args) throws Exception {
+
+        long startTime = System.nanoTime();
+
+        FileRepositoryBuilder builder = new FileRepositoryBuilder();
+        repository = builder
+                .setGitDir(new File(repoPath)).readEnvironment()
+                .findGitDir().build();
+
+        git = new Git(repository);
+
+        // JIRA: prendo la lista di release (ordinata)
+        releaseList = retrieveReleases(repository);
+        // JIRA: prendo la lista di issue bug fix
+        issueList = retrieveIssues();
+
+        // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
+        List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
+
+        doMetrics(releaseCommits);
 
         writeOnFile();
 

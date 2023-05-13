@@ -1,11 +1,9 @@
 package com.mycompany.app;
 
-import java.util.ArrayList;
-
 public class ClassFile {
-    private String path;
+    private final String path;
     private Integer commitsNumbers;
-    private Integer LOCs;
+    private Integer locs;
     private Integer touchedLOCs;         /* between two release:  added + deleted */
     private Integer churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
     private Integer nAuth;
@@ -15,7 +13,7 @@ public class ClassFile {
     public ClassFile(String path) {
         this.path           = path;
         this.commitsNumbers = 0;    // numero di commit relativo ad ogni release
-        this.LOCs           = 0;    // numero di LOC per release
+        this.locs = 0;    // numero di LOC per release
         this.touchedLOCs    = 0;    // numero di LOC Touched per release
         this.churn          = 0;    // numero di churn per release
         this.nAuth          = 0;    // numero di autori globale
@@ -36,11 +34,11 @@ public class ClassFile {
     }
 
     public Integer getLOCs() {
-        return LOCs;
+        return locs;
     }
 
-    public void setLOCs(Integer LOCs) {
-        this.LOCs = LOCs;
+    public void setLOCs(Integer locs) {
+        this.locs = locs;
     }
 
     public Integer getTouchedLOCs() {
