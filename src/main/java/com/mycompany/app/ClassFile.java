@@ -7,18 +7,18 @@ public class ClassFile {
     private Integer touchedLOCs;         /* between two release:  added + deleted */
     private Integer churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
     private Integer nAuth;
-    private Integer nFilesChanged;
+    private Integer averageChangeSet;
     private Integer numberOfBugFix;
 
     public ClassFile(String path) {
-        this.path           = path;
-        this.commitsNumbers = 0;    // numero di commit relativo ad ogni release
-        this.locs = 0;    // numero di LOC per release
-        this.touchedLOCs    = 0;    // numero di LOC Touched per release
-        this.churn          = 0;    // numero di churn per release
-        this.nAuth          = 0;    // numero di autori globale
-        this.nFilesChanged  = 0;    // numero medio di file cambiati insieme alla classe, per release
-        this.numberOfBugFix = 0;    // numero di bug fix sulla classe, per release
+        this.path             = path;
+        this.commitsNumbers   = 0;    // numero di commit relativo ad ogni release
+        this.locs             = 0;    // numero di LOC per release
+        this.touchedLOCs      = 0;    // numero di LOC Touched per release
+        this.churn            = 0;    // numero di churn per release
+        this.nAuth            = 0;    // numero di autori globale
+        this.averageChangeSet = 0;    // numero medio di file cambiati insieme alla classe, per release
+        this.numberOfBugFix   = 0;    // numero di bug fix sulla classe, per release
     }
 
     public String getPath() {
@@ -45,7 +45,7 @@ public class ClassFile {
         return touchedLOCs;
     }
 
-    public void increaseTouchedLOCs(Integer touchedLOCs) {
+    public void incrementTouchedLOCs(Integer touchedLOCs) {
         this.touchedLOCs += touchedLOCs;
     }
 
@@ -65,19 +65,19 @@ public class ClassFile {
         this.nAuth = nAuth;
     }
 
-    public Integer getnFilesChanged() {
-        return nFilesChanged;
+    public Integer getAverageChangeSet() {
+        return averageChangeSet;
     }
 
-    public void setnFilesChanged(Integer nFilesChanged) {
-        this.nFilesChanged = nFilesChanged;
+    public void incrementAverageChangeSet(Integer nFilesChanged) {
+        this.averageChangeSet += nFilesChanged;
     }
 
     public Integer getNumberOfBugFix() {
         return numberOfBugFix;
     }
 
-    public void increaseNumberOfBugFix() {
+    public void incrementNumberOfBugFix() {
         this.numberOfBugFix += 1;
     }
 }
