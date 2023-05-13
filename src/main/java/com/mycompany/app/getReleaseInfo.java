@@ -2,7 +2,6 @@ package com.mycompany.app;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,21 +16,19 @@ public class getReleaseInfo {
     /**
      * Popola le lista 'releaseList' e la ordina, ignorando quelle senza data
      * Popola 'relNames' e scarta l'ultimo 50% */
-    public static ArrayList<Release> retrieveReleases(Repository repository) throws IOException, JSONException {
+    public static List<Release> RetrieveReleases(Repository repository) throws IOException, JSONException {
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + "BOOKKEEPER";
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
 
-        ArrayList<Release> releaseList = new ArrayList<>();
+        List<Release> releaseList = new ArrayList<>();
 
         for (int i = 0; i < versions.length(); i++) {
             String name = "";
-            if (versions.getJSONObject(i).has("releaseDate")) {
-                if (versions.getJSONObject(i).has("name")) {
-                    name = versions.getJSONObject(i).get("name").toString();
-                    addRelease(releaseList, name, repository);
-                }
+            if (versions.getJSONObject(i).has("releaseDate") && versions.getJSONObject(i).has("name")) {
+                name = versions.getJSONObject(i).get("name").toString();
+                addRelease(releaseList, name, repository);
             }
         }
 
@@ -67,7 +64,7 @@ public class getReleaseInfo {
         return releaseList;
     }
 
-    public static void addRelease(ArrayList<Release> releaseList, String name, Repository repository) {
+    public static void addRelease(List<Release> releaseList, String name, Repository repository) {
         Release release = new Release("refs/tags/release-" + name, repository);
         releaseList.add(release);
     }

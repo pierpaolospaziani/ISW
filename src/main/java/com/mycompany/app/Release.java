@@ -1,9 +1,7 @@
 package com.mycompany.app;
 
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.blame.BlameResult;
-import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
@@ -44,20 +42,19 @@ public class Release {
     public List<RevCommit> retrieveCommits(Repository repository){
         try {
             ObjectId releaseCommitId = repository.resolve(this.getName());
-            List<RevCommit> commits = new ArrayList<>();
+            List<RevCommit> commitsList = new ArrayList<>();
             if (releaseCommitId != null) {
                 RevWalk revWalk = new RevWalk(repository);
                 RevCommit releaseCommit = revWalk.parseCommit(releaseCommitId);
                 revWalk.markStart(releaseCommit);
                 revWalk.setRevFilter(RevFilter.NO_MERGES);
                 for (RevCommit commit : revWalk) {
-                    commits.add(commit);
-//                    System.out.println(this.getName() + " :: " + commit.getShortMessage());
+                    commitsList.add(commit);
                 }
                 revWalk.dispose();
             }
-            Collections.reverse(commits);
-            return commits;
+            Collections.reverse(commitsList);
+            return commitsList;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -74,14 +71,11 @@ public class Release {
                 treeWalk.addTree(releaseCommit.getTree());
                 treeWalk.setRecursive(true);
                 while (treeWalk.next()) {
-                    if (!treeWalk.isSubtree()) {
-                        if (treeWalk.getPathString().contains(".java") && !treeWalk.getPathString().contains("/test")) {
-//                            System.out.println(this.getName() + " :: " + treeWalk.getPathString());
-                            ClassFile classFile = new ClassFile(treeWalk.getPathString());
-                            fileList.add(classFile);
-                            classFile.setLOCs(countLOCs(releaseCommit, classFile, repository));
-                            classFile.setnAuth(countAuthorsInFile(classFile.getPath(), releaseCommitId, repository));
-                        }
+                    if (!treeWalk.isSubtree() && treeWalk.getPathString().contains(".java") && !treeWalk.getPathString().contains("/test")) {
+                        ClassFile classFile = new ClassFile(treeWalk.getPathString());
+                        fileList.add(classFile);
+                        classFile.setLOCs(countLOCs(releaseCommit, classFile, repository));
+                        classFile.setnAuth(countAuthorsInFile(classFile.getPath(), releaseCommitId, repository));
                     }
                 }
             }
