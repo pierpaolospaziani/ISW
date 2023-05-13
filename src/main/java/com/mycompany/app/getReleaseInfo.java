@@ -1,55 +1,44 @@
 package com.mycompany.app;
 
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 public class getReleaseInfo {
-    public static HashMap<LocalDateTime, String> releaseHashMap;
-    public static ArrayList<LocalDateTime> releasesDateTimes;
-    public static List<String> releaseNames = new ArrayList<>();    // lista dei nomi delle release ordinate
 
     /**
-     * Popola le lista 'releases' e la ordina, ignorando quelle senza data
+     * Popola le lista 'releaseList' e la ordina, ignorando quelle senza data
      * Popola 'relNames' e scarta l'ultimo 50% */
-    public static void retrieveReleases() throws IOException, JSONException {
+    public static ArrayList<Release> retrieveReleases(Repository repository) throws IOException, JSONException {
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + "BOOKKEEPER";
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
 
-        releasesDateTimes = new ArrayList<>();
-        releaseHashMap = new HashMap<>();
+        ArrayList<Release> releaseList = new ArrayList<>();
 
         for (int i = 0; i < versions.length(); i++) {
             String name = "";
             if (versions.getJSONObject(i).has("releaseDate")) {
-                if (versions.getJSONObject(i).has("name"))
+                if (versions.getJSONObject(i).has("name")) {
                     name = versions.getJSONObject(i).get("name").toString();
-                addRelease(versions.getJSONObject(i).get("releaseDate").toString(), name);
-            }
-        }
-
-        releasesDateTimes.sort(LocalDateTime::compareTo);
-
-        // compone il nome completo delle release
-        for(LocalDateTime ldt : releasesDateTimes){
-            for(LocalDateTime l : releaseHashMap.keySet()) {
-                if(l.equals(ldt))
-                    releaseNames.add("refs/tags/release-" + releaseHashMap.get(l));
+                    addRelease(releaseList, name, repository);
+                }
             }
         }
 
         // ordina le release
-        releaseNames.sort((s1, s2) -> {
-            String[] s1Parts = s1.split("-");
-            String[] s2Parts = s2.split("-");
+        releaseList.sort((s1, s2) -> {
+            String[] s1Parts = s1.getName().split("-");
+            String[] s2Parts = s2.getName().split("-");
             String[] s1VersionParts = s1Parts[s1Parts.length - 1].split("\\.");
             String[] s2VersionParts = s2Parts[s2Parts.length - 1].split("\\.");
             int length = Math.min(s1VersionParts.length, s2VersionParts.length);
@@ -62,14 +51,25 @@ public class getReleaseInfo {
             }
             return s1VersionParts.length - s2VersionParts.length;
         });
+
+        // tolgo i branch e il 50%
+        for (int i = 1; i <= releaseList.size(); i++) {
+            ObjectId obj = repository.resolve(releaseList.get(i - 1).getName());
+            if (obj == null){
+                releaseList.remove(releaseList.get(i - 1));
+            }
+        }
+        int len = releaseList.size();
+        if (len > len / 2 + 1) {
+            releaseList.subList(len / 2 + 1, len).clear();
+        }
+
+        return releaseList;
     }
 
-    public static void addRelease(String strDate, String name) {
-        LocalDate date = LocalDate.parse(strDate);
-        LocalDateTime dateTime = date.atStartOfDay();
-        if (!releasesDateTimes.contains(dateTime))
-            releasesDateTimes.add(dateTime);
-        releaseHashMap.put(dateTime, name);
+    public static void addRelease(ArrayList<Release> releaseList, String name, Repository repository) {
+        Release release = new Release("refs/tags/release-" + name, repository);
+        releaseList.add(release);
     }
 
     public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
