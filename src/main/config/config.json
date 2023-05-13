@@ -1,0 +1,32 @@
+{
+  "PROJ_NAME": [
+    "BOOKKEEPER"
+  ],
+  "REPO_PATH": "/Users/pierpaolospaziani/Downloads/bookkeeper/.git",
+  "Output_File_Name_Tail": "Versions.csv",
+  "JIRA-API-URL" : "https://issues.apache.org/jira/rest/api/2/project/",
+  "JIRA-SEARCH_URL_FIRST_HALF" : "https://issues.apache.org/jira/rest/api/2/search?jql=project=",
+  "JIRA-SEARCH_URL_SECOND_HALF" : "+and+type=bug+and+(status=closed+or+status=resolved)+and+resolution=fixed&maxResults=500",
+  "Categories": [
+    "Version",
+    "File",
+    "Name",
+    "LOC",
+    "LOC_touched",
+    "NR",
+    "NFix",
+    "NAuth",
+    "LOC_added",
+    "MAX_LOC_added",
+    "AVG_LOC_added",
+    "Churn",
+    "MAX_Churn",
+    "AVG_churn",
+    "ChgSetSize",
+    "MAX_ChgSet",
+    "Age",
+    "WeightedAge",
+    "Buggy"
+  ],
+  "LOG_FILE_NAME" : "log.txt"
+}

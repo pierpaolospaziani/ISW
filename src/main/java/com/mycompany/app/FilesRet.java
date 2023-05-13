@@ -1,6 +1,7 @@
 package com.mycompany.app;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.*;
@@ -19,20 +20,19 @@ import static com.mycompany.app.getReleaseInfo.*;
 public class FilesRet {
     public static final String REPO_PATH = "/Users/pierpaolospaziani/Downloads/bookkeeper/.git";
     public static final String PROJ_NAME = "BOOKKEEPER";
-    private static List<String> ISSUE_LIST = null;
-    private static List<Release> RELEASE_LIST = null;
-    private static Repository REPOSITORY = null;
-    private static Git GIT_REPOSITORY = null;
+    private static List<String> issueList = null;
+    private static List<Release> releaseList = null;
+    private static Repository repository = null;
+    private static Git gitRepository = null;
 
     public static void writeOnFile() throws IOException {
         try (FileWriter fileWriter = new FileWriter(PROJ_NAME + "FilesInfo.csv")) {
-            //            fileWriter.append("Version, Version_Name, Name, LOCs, Churn, Age, Number_of_Authors, Number of Revisions, Average Change Set\n");
-            fileWriter.append("Version, Version Name, Path, LOCs, LOCs Touched, Churn, Number of Revisions, Authors Number, Bugfix, Average Change Set\n");
+            fileWriter.append("Version, Version Name, Path, LOCs, LOCs Touched, Churn, Revisions, Authors Number, Bugfix, Average Change Set\n");
 
-            for (Release release : RELEASE_LIST) {
+            for (Release release : releaseList) {
                 for (ClassFile file : release.getFiles()) {
 
-                    int releaseNumber = RELEASE_LIST.indexOf(release);
+                    int releaseNumber = releaseList.indexOf(release);
                     fileWriter.append(Integer.toString(releaseNumber+1));
 
                     fileWriter.append(",");
@@ -84,15 +84,15 @@ public class FilesRet {
 
     public static int countChurn(RevTree newTree, RevTree oldTree, String filepath) {
         try{
-            TreeWalk tw = new TreeWalk(REPOSITORY);
+            TreeWalk tw = new TreeWalk(repository);
             tw.addTree(newTree);
             if (oldTree != null) tw.addTree(oldTree);
             tw.setRecursive(true);
             tw.setFilter(PathFilter.create(filepath));
             tw.next();
-            int currLines = countLines(REPOSITORY.open(tw.getObjectId(0)).openStream());
+            int currLines = countLines(repository.open(tw.getObjectId(0)).openStream());
             int prevLines = 0;
-            if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(REPOSITORY.open(tw.getObjectId(1)).openStream());
+            if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(repository.open(tw.getObjectId(1)).openStream());
             return Math.abs(currLines - prevLines);
         } catch (Exception e){
             throw new RuntimeException(e);
@@ -102,15 +102,15 @@ public class FilesRet {
 
     public static int countLOCTouched(RevTree newTree, RevTree oldTree, String filepath) {
         try{
-            TreeWalk tw = new TreeWalk(REPOSITORY);
+            TreeWalk tw = new TreeWalk(repository);
             tw.addTree(newTree);
             if (oldTree != null) tw.addTree(oldTree);
             tw.setRecursive(true);
             tw.setFilter(PathFilter.create(filepath));
             tw.next();
-            int currLines = countLines(REPOSITORY.open(tw.getObjectId(0)).openStream());
+            int currLines = countLines(repository.open(tw.getObjectId(0)).openStream());
             int prevLines = 0;
-            if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(REPOSITORY.open(tw.getObjectId(1)).openStream());
+            if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(repository.open(tw.getObjectId(1)).openStream());
             return currLines + prevLines;
         } catch (Exception e){
             throw new RuntimeException(e);
@@ -135,7 +135,7 @@ public class FilesRet {
     /** Ritorna in una release, quanti bugfix sono stati effettuati sul file */
     public static Boolean isBufFix(RevCommit commit) {
         String message = commit.getShortMessage().replace("  ", "");
-        return message.startsWith("BOOKKEEPER-") && ISSUE_LIST.contains(message.split(":")[0]);
+        return message.startsWith("BOOKKEEPER-") && issueList.contains(message.split(":")[0]);
     }
 
 
@@ -167,7 +167,7 @@ public class FilesRet {
     public static List<ArrayList<RevCommit>> getCommitsPerRelease(){
         ArrayList<ArrayList<RevCommit>> releaseCommits = new ArrayList<>();
         ArrayList<RevCommit> commits = new ArrayList<>();
-        for (Release release : RELEASE_LIST) {
+        for (Release release : releaseList) {
             ArrayList<RevCommit> newCommits = new ArrayList<>();
             for (RevCommit c : release.getCommits()){
                 if (!commits.contains(c)){
@@ -183,65 +183,73 @@ public class FilesRet {
 
     public static int isGoodFile(String filepath,  int releaseNumber){
         if (filepath.contains(".java") && !filepath.contains("/test")){
-            for (ClassFile classFile : RELEASE_LIST.get(releaseNumber - 1).getFiles()){
-                if (classFile.getPath().equals(filepath)) return RELEASE_LIST.get(releaseNumber - 1).getFiles().indexOf(classFile);
+            for (ClassFile classFile : releaseList.get(releaseNumber - 1).getFiles()){
+                if (classFile.getPath().equals(filepath)) return releaseList.get(releaseNumber - 1).getFiles().indexOf(classFile);
             }
         }
         return -1;
     }
 
 
-    public static void computeMetrics(List<ArrayList<RevCommit>> releaseCommits){
+    public static void firstCommitCase(RevTree tree, RevCommit commit, int releaseNumber) throws IOException {
+        TreeWalk treeWalk = new TreeWalk(repository);
+        treeWalk.addTree(tree);
+        treeWalk.setRecursive(true);
+        ClassFile classFile = null;
+        int fileNumber = 0;
+        while (treeWalk.next()) {
+            String filePath = treeWalk.getPathString();
+            int index = isGoodFile(filePath,releaseNumber);
+            if (index != -1){
+                fileNumber += 1;
+                classFile = releaseList.get(releaseNumber-1).getFiles().get(index);
+                classFile.incrementCommitsNumbers();
+                classFile.incrementTouchedLOCs(countLOCTouched(tree, null, filePath));
+                classFile.increaseChurn(countChurn(tree, null, filePath));
+                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
+            }
+        }
+        if (fileNumber != 0) classFile.incrementAverageChangeSet(fileNumber);
+    }
 
+
+    public static void diffCommitCase(RevWalk revWalk, RevCommit commit, RevTree tree, int releaseNumber) throws IOException, GitAPIException {
+        RevCommit parentCommit = revWalk.parseCommit(commit.getParent(0).getId());
+        RevTree oldTree = parentCommit.getTree();
+        CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
+        newTreeParser.reset(repository.newObjectReader(), tree.getId());
+        CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
+        oldTreeParser.reset(repository.newObjectReader(), oldTree.getId());
+        List<DiffEntry> diffs = gitRepository.diff()
+                .setNewTree(newTreeParser)
+                .setOldTree(oldTreeParser)
+                .call();
+        for (DiffEntry diff : diffs) {
+            String filePath = diff.getNewPath();
+            int index = isGoodFile(filePath,releaseNumber);
+            if (index != -1){
+                ClassFile classFile = releaseList.get(releaseNumber-1).getFiles().get(index);
+                classFile.incrementCommitsNumbers();
+                classFile.incrementTouchedLOCs(countLOCTouched(tree, oldTree, filePath));
+                classFile.increaseChurn(countChurn(tree, oldTree, filePath));
+                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
+                classFile.incrementAverageChangeSet(diffs.size());
+            }
+        }
+    }
+
+
+    public static void computeMetrics(List<ArrayList<RevCommit>> releaseCommits){
         for (ArrayList<RevCommit> commitsPerRelease : releaseCommits){
             int releaseNumber = releaseCommits.indexOf(commitsPerRelease) + 1;
             for (RevCommit commit : commitsPerRelease){
-                // costruisce un'ArrayList 'filePaths' che contiene tutti i path dei file toccati nel commit (.java e non test)
                 RevTree tree = commit.getTree();
-                try (RevWalk revWalk = new RevWalk(REPOSITORY)) {
+                try (RevWalk revWalk = new RevWalk(repository)) {
                     // caso speciale per il primo commit che non ha parent
                     if (commit.getParentCount() == 0) {
-                        TreeWalk treeWalk = new TreeWalk(REPOSITORY);
-                        treeWalk.addTree(tree);
-                        treeWalk.setRecursive(true);
-                        ClassFile classFile = null;
-                        int fileNumber = 0;
-                        while (treeWalk.next()) {
-                            String filePath = treeWalk.getPathString();
-                            int index = isGoodFile(filePath,releaseNumber);
-                            if (index != -1){
-                                fileNumber += 1;
-                                classFile = RELEASE_LIST.get(releaseNumber-1).getFiles().get(index);
-                                classFile.incrementCommitsNumbers();
-                                classFile.incrementTouchedLOCs(countLOCTouched(tree, null, filePath));
-                                classFile.increaseChurn(countChurn(tree, null, filePath));
-                                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
-                            }
-                        }
-                        if (fileNumber != 0) classFile.incrementAverageChangeSet(fileNumber);
+                        firstCommitCase(tree, commit, releaseNumber);
                     } else {
-                        RevCommit parentCommit = revWalk.parseCommit(commit.getParent(0).getId());
-                        RevTree oldTree = parentCommit.getTree();
-                        CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
-                        newTreeParser.reset(REPOSITORY.newObjectReader(), tree.getId());
-                        CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
-                        oldTreeParser.reset(REPOSITORY.newObjectReader(), oldTree.getId());
-                        List<DiffEntry> diffs = GIT_REPOSITORY.diff()
-                                .setNewTree(newTreeParser)
-                                .setOldTree(oldTreeParser)
-                                .call();
-                        for (DiffEntry diff : diffs) {
-                            String filePath = diff.getNewPath();
-                            int index = isGoodFile(filePath,releaseNumber);
-                            if (index != -1){
-                                ClassFile classFile = RELEASE_LIST.get(releaseNumber-1).getFiles().get(index);
-                                classFile.incrementCommitsNumbers();
-                                classFile.incrementTouchedLOCs(countLOCTouched(tree, oldTree, filePath));
-                                classFile.increaseChurn(countChurn(tree, oldTree, filePath));
-                                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
-                                classFile.incrementAverageChangeSet(diffs.size());
-                            }
-                        }
+                        diffCommitCase(revWalk, commit, tree, releaseNumber);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -256,16 +264,16 @@ public class FilesRet {
         long startTime = System.nanoTime();
 
         FileRepositoryBuilder builder = new FileRepositoryBuilder();
-        REPOSITORY = builder
+        repository = builder
                 .setGitDir(new File(REPO_PATH)).readEnvironment()
                 .findGitDir().build();
 
-        GIT_REPOSITORY = new Git(REPOSITORY);
+        gitRepository = new Git(repository);
 
         // JIRA: prendo la lista di release (ordinata)
-        RELEASE_LIST = RetrieveReleases(REPOSITORY);
+        releaseList = RetrieveReleases(repository);
         // JIRA: prendo la lista di issue bug fix
-        ISSUE_LIST = retrieveIssues();
+        issueList = retrieveIssues();
 
         // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
         List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
@@ -274,7 +282,7 @@ public class FilesRet {
 
         writeOnFile();
 
-        REPOSITORY.close();
+        repository.close();
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
