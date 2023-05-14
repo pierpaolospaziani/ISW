@@ -8,27 +8,31 @@ public class IO {
         throw new IllegalStateException("Utility class");
     }
 
-    public static void appendOnLog(String whatToWrite){
-        try{
-            String dir = "src" +  File.separator + "main" + File.separator + Initializer.getLogFileName();
-            FileWriter fileWriter = new FileWriter(dir,true);
+    public static void appendOnLog(String whatToWrite) throws IOException {
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(Initializer.getLogFileName());
             fileWriter.append(whatToWrite).append("\n");
             fileWriter.flush();
-            fileWriter.close();
-        } catch(IOException i){
+        } catch (IOException i) {
             i.printStackTrace();
+        } finally {
+            assert fileWriter != null;
+            fileWriter.close();
         }
     }
 
-    public static void clean() {
-        try{
-            String dir = "src" +  File.separator + "main" + File.separator + "log.txt";
-            FileWriter fileWriter = new FileWriter(dir);
+    public static void clean() throws IOException {
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter("log.txt");
             fileWriter.append("");
             fileWriter.flush();
-            fileWriter.close();
-        } catch(IOException i){
+        } catch (IOException i) {
             i.printStackTrace();
+        } finally {
+            assert fileWriter != null;
+            fileWriter.close();
         }
     }
 }

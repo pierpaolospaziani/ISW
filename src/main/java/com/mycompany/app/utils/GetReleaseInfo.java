@@ -31,7 +31,7 @@ public class GetReleaseInfo {
             String name = "";
             if (versions.getJSONObject(i).has("releaseDate") && versions.getJSONObject(i).has("name")) {
                 name = versions.getJSONObject(i).get("name").toString();
-                addRelease(releaseList, name, repository);
+                addRelease(releaseList, name, repository, projName);
             }
         }
 
@@ -39,8 +39,8 @@ public class GetReleaseInfo {
         releaseList.sort((s1, s2) -> {
             String[] s1Parts = s1.getName().split("-");
             String[] s2Parts = s2.getName().split("-");
-            String[] s1VersionParts = s1Parts[s1Parts.length - 1].split("\\.");
-            String[] s2VersionParts = s2Parts[s2Parts.length - 1].split("\\.");
+            String[] s1VersionParts = s1Parts[1].split("\\.");
+            String[] s2VersionParts = s2Parts[1].split("\\.");
             int length = Math.min(s1VersionParts.length, s2VersionParts.length);
             for (int i = 0; i < length; i++) {
                 int s1Part = Integer.parseInt(s1VersionParts[i]);
@@ -68,9 +68,17 @@ public class GetReleaseInfo {
     }
 
 
-    private static void addRelease(List<Release> releaseList, String name, Repository repository) {
-        Release release = new Release("refs/tags/release-" + name, repository);
-        releaseList.add(release);
+    private static void addRelease(List<Release> releaseList, String name, Repository repository, String projName) {
+        String[] tkn = name.split("-");
+        if (!name.contains("-") || tkn.length == 0){
+            Release release;
+            if (Objects.equals(projName, "BOOKKEEPER")){
+                release = new Release("refs/tags/release-" + name, repository);
+            } else {
+                release = new Release("refs/tags/" + name, repository);
+            }
+            releaseList.add(release);
+        }
     }
 
 

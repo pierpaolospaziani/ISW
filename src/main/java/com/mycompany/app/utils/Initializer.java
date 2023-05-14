@@ -12,7 +12,7 @@ import java.util.Scanner;
 
 public class Initializer {
     private static List<String> PROJECT_NAMES    = null;
-    private static String REPO_PATH              = null;
+    private static List<String> REPO_PATH        = null;
     private static String JIRA_REST_API          = null;
     private static String SEARCH_URL_FIRST_HALF  = null;
     private static String SEARCH_URL_SECOND_HALF = null;
@@ -21,7 +21,7 @@ public class Initializer {
 
     private Initializer() {}
 
-    public static void getInstance() {
+    public static void getInstance() throws IOException {
         if(instance==null) {
             instance = new Initializer();
             instance.init();
@@ -32,7 +32,7 @@ public class Initializer {
         return PROJECT_NAMES;
     }
 
-    public static String getRepoPath(){
+    public static List<String> getRepoPath(){
         return REPO_PATH;
     }
 
@@ -52,7 +52,7 @@ public class Initializer {
         return LOG_FILE_NAME;
     }
 
-    private void init() {
+    private void init() throws IOException {
         String path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "config" + File.separator + "config.json";
         IO.clean();
 
@@ -69,7 +69,7 @@ public class Initializer {
             SEARCH_URL_SECOND_HALF = config.getString(names.getString(1));
             LOG_FILE_NAME          = config.getString(names.getString(2));
             PROJECT_NAMES          = convertJSONArrayListString(config,names.getString(3));
-            REPO_PATH              = config.getString(names.getString(4));
+            REPO_PATH              = convertJSONArrayListString(config,names.getString(4));
             SEARCH_URL_FIRST_HALF  = config.getString(names.getString(5));
 
         } catch (IOException e) {

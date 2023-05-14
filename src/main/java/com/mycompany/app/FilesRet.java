@@ -226,6 +226,7 @@ public class FilesRet {
         for (Release release : releaseList) {
             ArrayList<RevCommit> newCommits = new ArrayList<>();
             for (RevCommit c : release.getCommits()){
+                printProgressBar(releaseList.indexOf(release),release.getCommits().indexOf(c), release.getCommits().size());
                 if (!commits.contains(c)){
                     commits.add(c);
                     newCommits.add(c);
@@ -305,6 +306,7 @@ public class FilesRet {
         for (ArrayList<RevCommit> commitsPerRelease : releaseCommits){
             int releaseNumber = releaseCommits.indexOf(commitsPerRelease) + 1;
             for (RevCommit commit : commitsPerRelease){
+                printProgressBar(releaseNumber, commitsPerRelease.indexOf(commit), commitsPerRelease.size());
                 RevTree tree = commit.getTree();
                 try (RevWalk revWalk = new RevWalk(repository)) {
                     // caso speciale per il primo commit che non ha parent
@@ -321,6 +323,25 @@ public class FilesRet {
     }
 
 
+    public static void printProgressBar(int releaseNumber, int progress, int total) {
+        int percent = (int) ((float) progress / (float) total * 100);
+        System.out.print("\r RELEASE " + releaseNumber + " :: [");
+        for (int i = 0; i < 50; i++) {
+            if (i < (percent / 2)) {
+                System.out.print("=");
+            } else if (i == (percent / 2)) {
+                System.out.print(">");
+            } else {
+                System.out.print(" ");
+            }
+        }
+        System.out.print("] " + percent + "%  ");
+        if (progress == total) {
+            System.out.print("\n");
+        }
+    }
+
+
     public static void main(String[] args) throws Exception {
 
         long startTime = System.nanoTime();
@@ -332,8 +353,10 @@ public class FilesRet {
 
         for (String project : projects) {
 
-            REPO_PATH = Initializer.getRepoPath();
-            PROJ_NAME = Initializer.getProjectNames().get(project.indexOf(project));
+            System.out.println(project);
+
+            REPO_PATH = Initializer.getRepoPath().get(projects.indexOf(project));
+            PROJ_NAME = Initializer.getProjectNames().get(projects.indexOf(project));
 
             FileRepositoryBuilder builder = new FileRepositoryBuilder();
             repository = builder
@@ -347,6 +370,10 @@ public class FilesRet {
             // JIRA: prendo la lista di issue bug fix
             issueList = retrieveIssues();
 
+            for (Release r : releaseList){
+                System.out.println(r.getName());
+            }
+
             // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
             List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
 
@@ -355,6 +382,7 @@ public class FilesRet {
             writeOnFile();
 
             repository.close();
+            break;
         }
 
         long endTime = System.nanoTime();
