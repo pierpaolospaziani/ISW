@@ -1,5 +1,6 @@
-package com.mycompany.app;
+package com.mycompany.app.model;
 
+import com.mycompany.app.model.ClassFile;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.lib.ObjectId;
@@ -39,6 +40,7 @@ public class Release {
         return this.files;
     }
 
+    /** Recupera la lista di commit relativa alla release */
     public List<RevCommit> retrieveCommits(Repository repository){
         try {
             ObjectId releaseCommitId = repository.resolve(this.getName());
@@ -60,7 +62,8 @@ public class Release {
         }
     }
 
-    public List<ClassFile> retrieveFiles(Repository repository){
+    /** Recupera la lista di file presenti nella release */
+    private List<ClassFile> retrieveFiles(Repository repository){
         try {
             ArrayList<ClassFile> fileList = new ArrayList<>();
             ObjectId releaseCommitId = repository.resolve(this.name);
@@ -85,7 +88,8 @@ public class Release {
         }
     }
 
-    public static int countLOCs(RevCommit releaseCommit, ClassFile classFile, Repository repository) throws IOException {
+    /** Conta le LOC del file specificato nella release */
+    private int countLOCs(RevCommit releaseCommit, ClassFile classFile, Repository repository) throws IOException {
         TreeWalk treeWalk = new TreeWalk(repository);
         treeWalk.addTree(releaseCommit.getTree());
         treeWalk.setFilter(PathFilter.create(classFile.getPath()));
@@ -105,7 +109,8 @@ public class Release {
         }
     }
 
-    public static int countAuthorsInFile(String filepath, ObjectId releaseCommitId, Repository repository){
+    /** Conta il numero di autori del file specificato nella release */
+    private int countAuthorsInFile(String filepath, ObjectId releaseCommitId, Repository repository){
         try {
             BlameResult blameResult = new Git(repository).blame()
                 .setFilePath(filepath)

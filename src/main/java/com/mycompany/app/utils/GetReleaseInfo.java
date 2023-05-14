@@ -1,5 +1,6 @@
-package com.mycompany.app;
+package com.mycompany.app.utils;
 
+import com.mycompany.app.model.Release;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.json.JSONArray;
@@ -11,14 +12,16 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class getReleaseInfo {
+public class GetReleaseInfo {
 
-    /**
-     * Popola le lista 'releaseList' e la ordina, ignorando quelle senza data
-     * Popola 'relNames' e scarta l'ultimo 50% */
-    public static List<Release> RetrieveReleases(Repository repository) throws IOException, JSONException {
+    private GetReleaseInfo() {
+        throw new IllegalStateException("Utility class");
+    }
 
-        String url = "https://issues.apache.org/jira/rest/api/2/project/" + "BOOKKEEPER";
+
+    public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException {
+
+        String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
 
@@ -64,10 +67,12 @@ public class getReleaseInfo {
         return releaseList;
     }
 
-    public static void addRelease(List<Release> releaseList, String name, Repository repository) {
+
+    private static void addRelease(List<Release> releaseList, String name, Repository repository) {
         Release release = new Release("refs/tags/release-" + name, repository);
         releaseList.add(release);
     }
+
 
     public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
         try (InputStream is = new URL(url).openStream()) {
@@ -76,6 +81,7 @@ public class getReleaseInfo {
             return new JSONObject(jsonText);
         }
     }
+
 
     private static String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();

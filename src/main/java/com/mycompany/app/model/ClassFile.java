@@ -1,11 +1,12 @@
-package com.mycompany.app;
+package com.mycompany.app.model;
 
 public class ClassFile {
     private final String path;
     private Integer commitsNumbers;
     private Integer locs;
-    private Integer touchedLOCs;         /* between two release:  added + deleted */
-    private Integer churn;               /* between two release: |added - deleted| -> questo può essere fatto facendo la differenza tra i LOC delle release da verificare*/
+    private Integer touchedLOCs;
+    private Integer addedLOCs;
+    private Integer churn;
     private Integer nAuth;
     private Integer averageChangeSet;
     private Integer numberOfBugFix;
@@ -15,6 +16,7 @@ public class ClassFile {
         this.commitsNumbers   = 0;    // numero di commit relativo ad ogni release
         this.locs             = 0;    // numero di LOC per release
         this.touchedLOCs      = 0;    // numero di LOC Touched per release
+        this.addedLOCs        = 0;    // numero di LOC aggiunte per release
         this.churn            = 0;    // numero di churn per release
         this.nAuth            = 0;    // numero di autori globale
         this.averageChangeSet = 0;    // numero medio di file cambiati insieme alla classe, per release
@@ -47,6 +49,14 @@ public class ClassFile {
 
     public void incrementTouchedLOCs(Integer touchedLOCs) {
         this.touchedLOCs += touchedLOCs;
+    }
+
+    public Integer getAddedLOCs() {
+        return addedLOCs;
+    }
+
+    public void incrementAddedLOCs(Integer addedLOCs) {
+        this.addedLOCs += addedLOCs;
     }
 
     public Integer getChurn() {
