@@ -1,11 +1,11 @@
 {
   "PROJECT_NAMES": [
-    "OPENJPA",
-    "BOOKKEEPER"
+    "BOOKKEEPER",
+    "OPENJPA"
   ],
   "REPO_PATH": [
-    "/Users/pierpaolospaziani/Downloads/openjpa/.git",
-    "/Users/pierpaolospaziani/Downloads/bookkeeper/.git"
+    "/Users/pierpaolospaziani/Downloads/bookkeeper/.git",
+    "/Users/pierpaolospaziani/Downloads/openjpa/.git"
 ],
   "JIRA_REST_API" : "https://issues.apache.org/jira/rest/api/2/project/",
   "JIRA_SEARCH_URL_FIRST_HALF" : "https://issues.apache.org/jira/rest/api/2/search?jql=project=",

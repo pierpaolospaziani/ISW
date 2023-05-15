@@ -36,7 +36,7 @@ public class FilesRet {
 
 
     /** Esegue la scrittura delle metriche sul csv */
-    public static void writeOnFile() {
+    public static void writeOnFile() throws IOException {
         try (FileWriter fileWriter = new FileWriter(PROJ_NAME + ".csv")) {
             fileWriter.append("Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Added, Churn, Avg. Churn, Authors Number, Average Change Set\n");
 
@@ -113,27 +113,23 @@ public class FilesRet {
             }
             fileWriter.flush();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            IO.appendOnLog(e +"\n");
         }
     }
 
 
     /** Ritorna il numero di Churn sul file nel commit |added - deleted| */
-    public static int countChurn(RevTree newTree, RevTree oldTree, String filepath) {
-        try{
-            TreeWalk tw = new TreeWalk(repository);
-            tw.addTree(newTree);
-            if (oldTree != null) tw.addTree(oldTree);
-            tw.setRecursive(true);
-            tw.setFilter(PathFilter.create(filepath));
-            tw.next();
-            int currLines = countLines(repository.open(tw.getObjectId(0)).openStream());
-            int prevLines = 0;
-            if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(repository.open(tw.getObjectId(1)).openStream());
-            return Math.abs(currLines - prevLines);
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
+    public static int countChurn(RevTree newTree, RevTree oldTree, String filepath) throws IOException {
+        TreeWalk tw = new TreeWalk(repository);
+        tw.addTree(newTree);
+        if (oldTree != null) tw.addTree(oldTree);
+        tw.setRecursive(true);
+        tw.setFilter(PathFilter.create(filepath));
+        tw.next();
+        int currLines = countLines(repository.open(tw.getObjectId(0)).openStream());
+        int prevLines = 0;
+        if (oldTree != null && tw.getFileMode(1)!= FileMode.MISSING) prevLines = countLines(repository.open(tw.getObjectId(1)).openStream());
+        return Math.abs(currLines - prevLines);
     }
 
 
@@ -302,21 +298,18 @@ public class FilesRet {
 
 
     /** Calcola le metriche per ogni commit di ogni release */
-    public static void computeMetrics(List<ArrayList<RevCommit>> releaseCommits){
+    public static void computeMetrics(List<ArrayList<RevCommit>> releaseCommits) throws IOException, GitAPIException {
         for (ArrayList<RevCommit> commitsPerRelease : releaseCommits){
             int releaseNumber = releaseCommits.indexOf(commitsPerRelease) + 1;
             for (RevCommit commit : commitsPerRelease){
                 printProgressBar(releaseNumber, commitsPerRelease.indexOf(commit), commitsPerRelease.size());
                 RevTree tree = commit.getTree();
-                try (RevWalk revWalk = new RevWalk(repository)) {
-                    // caso speciale per il primo commit che non ha parent
-                    if (commit.getParentCount() == 0) {
-                        firstCommitCase(tree, commit, releaseNumber);
-                    } else {
-                        diffCommitCase(revWalk, commit, tree, releaseNumber);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                RevWalk revWalk = new RevWalk(repository);
+                // caso speciale per il primo commit che non ha parent
+                if (commit.getParentCount() == 0) {
+                    firstCommitCase(tree, commit, releaseNumber);
+                } else {
+                    diffCommitCase(revWalk, commit, tree, releaseNumber);
                 }
             }
         }
@@ -325,7 +318,7 @@ public class FilesRet {
 
     public static void printProgressBar(int releaseNumber, int progress, int total) {
         int percent = (int) ((float) progress / (float) total * 100);
-        System.out.print("\r RELEASE " + releaseNumber + " :: [");
+        System.out.print("\rRELEASE " + releaseNumber + " of " + releaseList.size() + " :: [");
         for (int i = 0; i < 50; i++) {
             if (i < (percent / 2)) {
                 System.out.print("=");
@@ -346,48 +339,47 @@ public class FilesRet {
 
         long startTime = System.nanoTime();
 
-        Initializer.getInstance();
-        IO.appendOnLog("STARTING SOFTWARE METRICS ANALYZER\n");
+        try {
+            Initializer.getInstance();
 
-        List<String> projects = Initializer.getProjectNames();
+            List<String> projects = Initializer.getProjectNames();
 
-        for (String project : projects) {
+            for (String project : projects) {
 
-            System.out.println(project);
+                IO.appendOnLog(project+"\n");
 
-            REPO_PATH = Initializer.getRepoPath().get(projects.indexOf(project));
-            PROJ_NAME = Initializer.getProjectNames().get(projects.indexOf(project));
+                REPO_PATH = Initializer.getRepoPath().get(projects.indexOf(project));
+                PROJ_NAME = Initializer.getProjectNames().get(projects.indexOf(project));
 
-            FileRepositoryBuilder builder = new FileRepositoryBuilder();
-            repository = builder
-                    .setGitDir(new File(REPO_PATH)).readEnvironment()
-                    .findGitDir().build();
+                FileRepositoryBuilder builder = new FileRepositoryBuilder();
+                repository = builder
+                        .setGitDir(new File(REPO_PATH)).readEnvironment()
+                        .findGitDir().build();
 
-            gitRepository = new Git(repository);
+                gitRepository = new Git(repository);
 
-            // JIRA: prendo la lista di release (ordinata)
-            releaseList = retrieveReleases(repository, PROJ_NAME);
-            // JIRA: prendo la lista di issue bug fix
-            issueList = retrieveIssues();
+                // JIRA: prendo la lista di release (ordinata)
+                releaseList = retrieveReleases(repository, PROJ_NAME);
+                // JIRA: prendo la lista di issue bug fix
+                issueList = retrieveIssues();
 
-            for (Release r : releaseList){
-                System.out.println(r.getName());
+                // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
+                List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
+
+                computeMetrics(releaseCommits);
+
+                writeOnFile();
+
+                repository.close();
+                break;
             }
-
-            // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
-            List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
-
-            computeMetrics(releaseCommits);
-
-            writeOnFile();
-
-            repository.close();
-            break;
+        } catch (Exception e){
+            IO.appendOnLog(e+"\n");
         }
 
         long endTime = System.nanoTime();
         long duration = (endTime - startTime);
 
-        System.out.println("Tempo di esecuzione: " + (float) duration/1000000000 + " secondi");
+        System.out.println("\rTempo di esecuzione: " + (float) duration/1000000000 + " secondi");
     }
 }

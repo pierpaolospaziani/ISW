@@ -56,25 +56,20 @@ public class Initializer {
         String path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "config" + File.separator + "config.json";
         IO.clean();
 
-        try {
-            File file = new File(path);
-            if (!file.exists()){
-                    throw new IOException("Configuration file not found!");
-            }
-            String myJson = new Scanner(file).useDelimiter("\\Z").next();
-            JSONObject config = new JSONObject(myJson);
-            JSONArray names = config.names();
-
-            JIRA_REST_API          = config.getString(names.getString(0));
-            SEARCH_URL_SECOND_HALF = config.getString(names.getString(1));
-            LOG_FILE_NAME          = config.getString(names.getString(2));
-            PROJECT_NAMES          = convertJSONArrayListString(config,names.getString(3));
-            REPO_PATH              = convertJSONArrayListString(config,names.getString(4));
-            SEARCH_URL_FIRST_HALF  = config.getString(names.getString(5));
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        File file = new File(path);
+        if (!file.exists()){
+                throw new IOException("Configuration file not found!");
         }
+        String myJson = new Scanner(file).useDelimiter("\\Z").next();
+        JSONObject config = new JSONObject(myJson);
+        JSONArray names = config.names();
+
+        JIRA_REST_API          = config.getString(names.getString(0));
+        SEARCH_URL_SECOND_HALF = config.getString(names.getString(1));
+        LOG_FILE_NAME          = config.getString(names.getString(2));
+        PROJECT_NAMES          = convertJSONArrayListString(config,names.getString(3));
+        REPO_PATH              = convertJSONArrayListString(config,names.getString(4));
+        SEARCH_URL_FIRST_HALF  = config.getString(names.getString(5));
     }
 
     private static List<String> convertJSONArrayListString(JSONObject obj, String field){
