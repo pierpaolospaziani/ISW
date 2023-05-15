@@ -32,7 +32,7 @@ public class GetReleaseInfo {
         for (int i = 0; i < versions.length(); i++) {
             if (versions.getJSONObject(i).has("releaseDate") && versions.getJSONObject(i).has("name")) {
                 String name = versions.getJSONObject(i).get("name").toString();
-                addRelease(releasesNames, name, repository, projName);
+                addRelease(releasesNames, name, projName);
             }
         }
 
