@@ -11,13 +11,13 @@ import java.util.Scanner;
 
 
 public class Initializer {
-    private static List<String> PROJECT_NAMES    = null;
-    private static List<String> REPO_PATH        = null;
-    private static String JIRA_REST_API          = null;
-    private static String SEARCH_URL_FIRST_HALF  = null;
-    private static String SEARCH_URL_SECOND_HALF = null;
-    private static Initializer instance          = null;
-    private static String LOG_FILE_NAME          = null;
+    private static List<String> projectNames = null;
+    private static List<String> repoPath = null;
+    private static String jiraRestApi = null;
+    private static String searchUrlFirstHalf = null;
+    private static String searchUrlSecondHalf = null;
+    private static Initializer instance = null;
+    private static String logFileName = null;
 
     private Initializer() {}
 
@@ -29,47 +29,49 @@ public class Initializer {
     }
 
     public static List<String> getProjectNames(){
-        return PROJECT_NAMES;
+        return projectNames;
     }
 
     public static List<String> getRepoPath(){
-        return REPO_PATH;
+        return repoPath;
     }
 
     public static String getJiraRestApi() {
-        return JIRA_REST_API;
+        return jiraRestApi;
     }
 
     public static String getSearchUrlFirstHalf() {
-        return SEARCH_URL_FIRST_HALF;
+        return searchUrlFirstHalf;
     }
 
     public static String getSearchUrlSecondHalf() {
-        return SEARCH_URL_SECOND_HALF;
+        return searchUrlSecondHalf;
     }
 
     public static String getLogFileName() {
-        return LOG_FILE_NAME;
+        return logFileName;
     }
 
-    private void init() throws IOException {
+    private static void init() throws IOException {
         String path = System.getProperty("user.dir") + File.separator + "src" + File.separator + "main" + File.separator + "config" + File.separator + "config.json";
         IO.clean();
 
         File file = new File(path);
-        if (!file.exists()){
-                throw new IOException("Configuration file not found!");
+        if (!file.exists()) {
+            throw new IOException("Configuration file not found!");
         }
-        String myJson = new Scanner(file).useDelimiter("\\Z").next();
-        JSONObject config = new JSONObject(myJson);
-        JSONArray names = config.names();
+        try (Scanner scanner = new Scanner(file)) {
+            String myJson = scanner.useDelimiter("\\Z").next();
+            JSONObject config = new JSONObject(myJson);
+            JSONArray names = config.names();
 
-        JIRA_REST_API          = config.getString(names.getString(0));
-        SEARCH_URL_SECOND_HALF = config.getString(names.getString(1));
-        LOG_FILE_NAME          = config.getString(names.getString(2));
-        PROJECT_NAMES          = convertJSONArrayListString(config,names.getString(3));
-        REPO_PATH              = convertJSONArrayListString(config,names.getString(4));
-        SEARCH_URL_FIRST_HALF  = config.getString(names.getString(5));
+            jiraRestApi = config.getString(names.getString(0));
+            searchUrlSecondHalf = config.getString(names.getString(1));
+            logFileName = config.getString(names.getString(2));
+            projectNames = convertJSONArrayListString(config, names.getString(3));
+            repoPath = convertJSONArrayListString(config, names.getString(4));
+            searchUrlFirstHalf = config.getString(names.getString(5));
+        }
     }
 
     private static List<String> convertJSONArrayListString(JSONObject obj, String field){

@@ -1,6 +1,7 @@
 package com.mycompany.app.utils;
 
 import com.mycompany.app.model.Release;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.json.JSONArray;
@@ -19,7 +20,7 @@ public class GetReleaseInfo {
     }
 
 
-    public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException {
+    public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException, GitAPIException {
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
         JSONObject json = readJsonFromUrl(url);
@@ -59,7 +60,7 @@ public class GetReleaseInfo {
         return releaseList;
     }
 
-    private static void createReleases(List<String> releasesNames, List<Release> releaseList, Repository repository){
+    private static void createReleases(List<String> releasesNames, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
         for (String name : releasesNames) {
             printProgressBar(name, releasesNames.indexOf(name), releasesNames.size());
             Release release = new Release(name, repository);
@@ -125,7 +126,7 @@ public class GetReleaseInfo {
     }
 
 
-    private static void addRelease(List<String> releaseList, String name, Repository repository, String projName) {
+    private static void addRelease(List<String> releaseList, String name, String projName) {
         String[] tkn = name.split("-");
         if (!name.contains("-") || tkn.length == 0){
             if (Objects.equals(projName, "BOOKKEEPER")){

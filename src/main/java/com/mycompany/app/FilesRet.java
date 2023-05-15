@@ -27,17 +27,16 @@ import java.util.*;
 import static com.mycompany.app.utils.GetReleaseInfo.*;
 
 public class FilesRet {
-    public static String REPO_PATH           = null;
-    public static String PROJ_NAME           = null;
-    private static List<String> issueList    = null;
+    private static String projectName = null;
+    private static List<String> issueList = null;
     private static List<Release> releaseList = null;
-    private static Repository repository     = null;
-    private static Git gitRepository         = null;
+    private static Repository repository = null;
+    private static Git gitRepository = null;
 
 
     /** Esegue la scrittura delle metriche sul csv */
     public static void writeOnFile() throws IOException {
-        try (FileWriter fileWriter = new FileWriter(PROJ_NAME + ".csv")) {
+        try (FileWriter fileWriter = new FileWriter(projectName + ".csv")) {
             fileWriter.append("Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Added, Churn, Avg. Churn, Authors Number, Average Change Set\n");
 
             // hashMap per il conteggio dell'Age
@@ -58,20 +57,8 @@ public class FilesRet {
                     fileWriter.append(",");
                     fileWriter.append(file.getPath());
 
-                    int age = 0;
-                    int index = 0;
-                    for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
-                        if (entry.getKey().equals(file.getPath())){
-                            age = entry.getValue();
-                            entry.setValue(age+1);
-                            break;
-                        } else if (index == hashMap.size() - 1){
-                            hashMap.put(file.getPath(), age);
-                        }
-                        index++;
-                    }
                     fileWriter.append(",");
-                    fileWriter.append(String.valueOf(age));
+                    fileWriter.append(String.valueOf(countAge(hashMap, file)));
 
                     fileWriter.append(",");
                     fileWriter.append(file.getCommitsNumbers().toString());
@@ -115,6 +102,24 @@ public class FilesRet {
         } catch (Exception e) {
             IO.appendOnLog(e +"\n");
         }
+    }
+
+
+    /** Ritorna l'age del file */
+    public static int countAge(HashMap<String, Integer> hashMap, ClassFile file){
+        int age = 0;
+        int index = 0;
+        for (Map.Entry<String, Integer> entry : hashMap.entrySet()) {
+            if (entry.getKey().equals(file.getPath())){
+                age = entry.getValue();
+                entry.setValue(age+1);
+                break;
+            } else if (index == hashMap.size() - 1){
+                hashMap.put(file.getPath(), age);
+            }
+            index++;
+        }
+        return age;
     }
 
 
@@ -200,7 +205,7 @@ public class FilesRet {
         do {
             j = i + 1000;
             String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
-                    + PROJ_NAME + "%22AND%22issueType%22=%22Bug%22AND(%22status%22=%22closed%22OR"
+                    + projectName + "%22AND%22issueType%22=%22Bug%22AND(%22status%22=%22closed%22OR"
                     + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,created&startAt="
                     + i + "&maxResults=" + j;
             JSONObject json = readJsonFromUrl(url);
@@ -261,7 +266,7 @@ public class FilesRet {
                 classFile.incrementCommitsNumbers();
                 classFile.incrementTouchedLOCs(countLines(repository.open(treeWalk.getObjectId(0)).openStream()));
                 classFile.increaseChurn(countChurn(tree, null, filePath));
-                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
+                if (Boolean.TRUE.equals(isBufFix(commit))) classFile.incrementNumberOfBugFix();
                 classFile.incrementAddedLOCs(countLines(repository.open(treeWalk.getObjectId(0)).openStream()));
             }
         }
@@ -289,7 +294,7 @@ public class FilesRet {
                 classFile.incrementCommitsNumbers();
                 classFile.incrementTouchedLOCs(countLOCTouched(diff));
                 classFile.increaseChurn(countChurn(tree, oldTree, filePath));
-                if (isBufFix(commit)) classFile.incrementNumberOfBugFix();
+                if (Boolean.TRUE.equals(isBufFix(commit))) classFile.incrementNumberOfBugFix();
                 classFile.incrementAverageChangeSet(diffs.size());
                 classFile.incrementAddedLOCs(countAddedLOCs(diff));
             }
@@ -348,18 +353,18 @@ public class FilesRet {
 
                 IO.appendOnLog(project+"\n");
 
-                REPO_PATH = Initializer.getRepoPath().get(projects.indexOf(project));
-                PROJ_NAME = Initializer.getProjectNames().get(projects.indexOf(project));
+                String repoPath = Initializer.getRepoPath().get(projects.indexOf(project));
+                projectName = Initializer.getProjectNames().get(projects.indexOf(project));
 
                 FileRepositoryBuilder builder = new FileRepositoryBuilder();
                 repository = builder
-                        .setGitDir(new File(REPO_PATH)).readEnvironment()
+                        .setGitDir(new File(repoPath)).readEnvironment()
                         .findGitDir().build();
 
                 gitRepository = new Git(repository);
 
                 // JIRA: prendo la lista di release (ordinata)
-                releaseList = retrieveReleases(repository, PROJ_NAME);
+                releaseList = retrieveReleases(repository, projectName);
                 // JIRA: prendo la lista di issue bug fix
                 issueList = retrieveIssues();
 
@@ -371,7 +376,6 @@ public class FilesRet {
                 writeOnFile();
 
                 repository.close();
-                break;
             }
         } catch (Exception e){
             IO.appendOnLog(e+"\n");

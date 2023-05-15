@@ -9,16 +9,16 @@ public class IO {
     }
 
     public static void appendOnLog(String whatToWrite) throws IOException {
-        FileWriter fileWriter = new FileWriter(Initializer.getLogFileName());
-        fileWriter.append(whatToWrite).append("\n");
-        fileWriter.flush();
-        fileWriter.close();
+        try (FileWriter fileWriter = new FileWriter(Initializer.getLogFileName())) {
+            fileWriter.append(whatToWrite).append("\n");
+            fileWriter.flush();
+        }
     }
 
     public static void clean() throws IOException {
-        FileWriter fileWriter = new FileWriter("log.txt");
-        fileWriter.append("");
-        fileWriter.flush();
-        fileWriter.close();
+        try (FileWriter fileWriter = new FileWriter("log.txt")) {
+            fileWriter.append("");
+            fileWriter.flush();
+        }
     }
 }
