@@ -1,7 +1,5 @@
 package com.mycompany.app.model;
 
-import java.time.LocalDateTime;
-
 public class Issue {
     private final String key;
     private Integer injectedVersion;

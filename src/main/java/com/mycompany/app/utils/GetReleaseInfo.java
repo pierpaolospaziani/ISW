@@ -57,8 +57,11 @@ public class GetReleaseInfo {
 
         createReleases(entryList, releaseList, repository);
 
+//        for (Release r : releaseList) System.out.println(r.getName());
+
         return releaseList;
     }
+
 
     private static void createReleases(List<Map.Entry<String, LocalDateTime>> entryList, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
         for (Map.Entry<String, LocalDateTime> entry : entryList) {
@@ -93,7 +96,7 @@ public class GetReleaseInfo {
         if (!name.contains("-") || tkn.length == 0){
             if (Objects.equals(projName, "BOOKKEEPER")){
                 releasesMap.put("refs/tags/release-" + name, date);
-            } else {
+            } else if (!name.split("\\.")[0].equals(String.valueOf(0))){
                 releasesMap.put("refs/tags/" + name, date);
             }
         }

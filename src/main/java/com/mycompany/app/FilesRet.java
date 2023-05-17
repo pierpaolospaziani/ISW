@@ -197,7 +197,7 @@ public class FilesRet {
     /** Se il commit riguarda un bugfix, ritorna la relativa issue, altrimenti null */
     public static Issue bugFixIssue(RevCommit commit) {
         String message = commit.getShortMessage().replace("  ", "");
-        if (message.startsWith("BOOKKEEPER-")){
+        if (message.startsWith("BOOKKEEPER-") || message.startsWith("OPENJPA-")){
             for (Issue issue : issueList){
                 if (issue.getKey().contains(message.split(":")[0])){
                     return issue;
@@ -224,8 +224,49 @@ public class FilesRet {
     }
 
 
+    /** Setta l'opening version nel'issue specificata */
+    public static void setOpeningVersion(Issue issue, LocalDateTime openingVersionDate){
+        for (Release release : releaseList){
+            if (openingVersionDate.isBefore(release.getDate())){
+                issue.setOpeningVersion(releaseList.indexOf(release));
+                break;
+            }
+        }
+    }
+
+
+    /** Setta la fix version nel'issue specificata */
+    public static void setFixVersion(Issue issue, JSONArray fixVersions){
+        if (fixVersions.length() != 0){
+            String version = fixVersions.getJSONObject(fixVersions.length()-1).get("name").toString();
+            for (Release release : releaseList){
+                if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
+                        || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
+                    issue.setFixedVersion(releaseList.indexOf(release));
+                    break;
+                }
+            }
+        }
+    }
+
+
+    /** Setta l'injected version nel'issue specificata */
+    public static void setInjectedVersion(Issue issue, JSONArray injectedVersions){
+        if (injectedVersions.length() != 0){
+            String version = injectedVersions.getJSONObject(0).get("name").toString();
+            for (Release release : releaseList){
+                if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
+                        || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
+                    issue.setInjectedVersion(releaseList.indexOf(release));
+                    break;
+                }
+            }
+        }
+    }
+
+
     /** JIRA: costruisce l'ArrayList che contiene tutti i ticket BUG chiusi e fixati */
-    public static ArrayList<Issue> retrieveIssues() throws IOException {
+    public static List<Issue> retrieveIssues() throws IOException {
         ArrayList<Issue> issuesListJira = new ArrayList<>();
         int j;
         int i = 0;
@@ -245,34 +286,11 @@ public class FilesRet {
                 issuesListJira.add(issue);
                 JSONObject fields = (JSONObject) issues.getJSONObject(i % 1000).get("fields");
                 LocalDateTime openingVersionDate = LocalDateTime.parse(fields.get("created").toString().split("\\.")[0]);
-                for (Release release : releaseList){
-                    if (openingVersionDate.isBefore(release.getDate())){
-                        issue.setOpeningVersion(releaseList.indexOf(release));
-                        break;
-                    }
-                }
                 JSONArray fixVersions = fields.getJSONArray("fixVersions");
-                if (fixVersions.length() != 0){
-                    String version = fixVersions.getJSONObject(fixVersions.length()-1).get("name").toString();
-                    for (Release release : releaseList){
-                        if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
-                                || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
-                            issue.setFixedVersion(releaseList.indexOf(release));
-                            break;
-                        }
-                    }
-                }
                 JSONArray injectedVersions = fields.getJSONArray("versions");
-                if (injectedVersions.length() != 0){
-                    String version = injectedVersions.getJSONObject(0).get("name").toString();
-                    for (Release release : releaseList){
-                        if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
-                                || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
-                            issue.setInjectedVersion(releaseList.indexOf(release));
-                            break;
-                        }
-                    }
-                }
+                setOpeningVersion(issue, openingVersionDate);
+                setFixVersion(issue, fixVersions);
+                setInjectedVersion(issue, injectedVersions);
 //                System.out.println( i + " :: " + issue.getKey() + " :: " + issue.getInjectedVersion() + " :: " + issue.getOpeningVersion() + " :: " + issue.getFixedVersion());
             }
         } while (i < total);
@@ -409,32 +427,30 @@ public class FilesRet {
 
 
     /** Calcola e setta il coefficiente di proportion per ogni release */
-    public static void computeProportion(){
-        for (int i = 0; i < releaseList.size(); i++){
-            double p = 0;
-            int howMany = 0;
-            for (Issue issue : issueList){
-                if (issue.getInjectedVersion() != null
-                        && issue.getOpeningVersion() != null
-                        && issue.getFixedVersion() != null
-                        && issue.getFixedVersion() == i
-                        && issue.getInjectedVersion() <= issue.getOpeningVersion()
-                        && issue.getOpeningVersion() <= issue.getFixedVersion()){
-                    howMany += 1;
-                    if (Objects.equals(issue.getFixedVersion(), issue.getOpeningVersion())) {
-                        p += issue.getFixedVersion() - issue.getInjectedVersion();
-                    } else {
-                        p += (double) (issue.getFixedVersion() - issue.getInjectedVersion()) / (issue.getFixedVersion() - issue.getOpeningVersion());
-                    }
+    public static void computeProportion(int i){
+        double p = 0;
+        int howMany = 0;
+        for (Issue issue : issueList){
+            if (issue.getInjectedVersion() != null
+                    && issue.getOpeningVersion() != null
+                    && issue.getFixedVersion() != null
+                    && issue.getFixedVersion() == i
+                    && issue.getInjectedVersion() <= issue.getOpeningVersion()
+                    && issue.getOpeningVersion() <= issue.getFixedVersion()){
+                howMany += 1;
+                if (Objects.equals(issue.getFixedVersion(), issue.getOpeningVersion())) {
+                    p += issue.getFixedVersion() - issue.getInjectedVersion();
+                } else {
+                    p += (double) (issue.getFixedVersion() - issue.getInjectedVersion()) / (issue.getFixedVersion() - issue.getOpeningVersion());
                 }
             }
-            if (howMany != 0 && p != 0) {
-                releaseList.get(i).setProportion(p/howMany);
-            } else {
-                releaseList.get(i).setProportion(1);
-            }
-//            System.out.println(releaseList.get(i).getName() + " :: " + releaseList.get(i).getProportion());
         }
+        if (howMany != 0 && p != 0) {
+            releaseList.get(i).setProportion(p/howMany);
+        } else {
+            releaseList.get(i).setProportion(1);
+        }
+//            System.out.println(releaseList.get(i).getName() + " :: " + releaseList.get(i).getProportion());
     }
 
 
@@ -487,7 +503,9 @@ public class FilesRet {
                 // JIRA: prendo la lista di issue bug fix
                 issueList = retrieveIssues();
                 // Calcola e setta il coefficiente di proportion per ogni release
-                computeProportion();
+                for (int i = 0; i < releaseList.size(); i++) {
+                    computeProportion(i);
+                }
                 // Calcola l'injected version per i ticket che ne sono privi
                 useProportion();
 
@@ -499,7 +517,6 @@ public class FilesRet {
                 writeOnFile();
 
                 repository.close();
-                break;
             }
         } catch (Exception e){
             IO.appendOnLog(e+"\n");
