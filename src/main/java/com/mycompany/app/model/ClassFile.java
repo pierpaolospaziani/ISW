@@ -10,6 +10,7 @@ public class ClassFile {
     private Integer nAuth;
     private Integer averageChangeSet;
     private Integer numberOfBugFix;
+    private Boolean isBuggy;
 
     public ClassFile(String path) {
         this.path             = path;
@@ -21,6 +22,7 @@ public class ClassFile {
         this.nAuth            = 0;    // numero di autori globale
         this.averageChangeSet = 0;    // numero medio di file cambiati insieme alla classe, per release
         this.numberOfBugFix   = 0;    // numero di bug fix sulla classe, per release
+        this.isBuggy          = false;
     }
 
     public String getPath() {
@@ -89,5 +91,13 @@ public class ClassFile {
 
     public void incrementNumberOfBugFix() {
         this.numberOfBugFix += 1;
+    }
+
+    public Boolean getBuggy() {
+        return isBuggy;
+    }
+
+    public void setBuggy() {
+        isBuggy = true;
     }
 }

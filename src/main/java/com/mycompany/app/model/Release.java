@@ -15,21 +15,30 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Release {
     private final String name;
+    private final LocalDateTime date;
     private final List<RevCommit> commits;
     private final List<ClassFile> files;
+    private double proportion;
 
-    public Release(String name, Repository repository) throws IOException, GitAPIException {
-        this.name    = name;
-        this.commits = retrieveCommits(repository);
-        this.files   = retrieveFiles(repository);
+    public Release(String name, LocalDateTime date, Repository repository) throws IOException, GitAPIException {
+        this.name       = name;
+        this.date       = date;
+        this.commits    = retrieveCommits(repository);
+        this.files      = retrieveFiles(repository);
+        this.proportion = 0.0;
     }
 
     public String getName() {
         return this.name;
+    }
+
+    public LocalDateTime getDate() {
+        return this.date;
     }
 
     public List<RevCommit> getCommits() {
@@ -38,6 +47,14 @@ public class Release {
 
     public List<ClassFile> getFiles() {
         return this.files;
+    }
+
+    public double getProportion() {
+        return proportion;
+    }
+
+    public void setProportion(double proportion) {
+        this.proportion = proportion;
     }
 
     /** Recupera la lista di commit relativa alla release */

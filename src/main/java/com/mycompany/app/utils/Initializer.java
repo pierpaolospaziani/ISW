@@ -13,9 +13,6 @@ import java.util.Scanner;
 public class Initializer {
     private static List<String> projectNames = null;
     private static List<String> repoPath = null;
-    private static String jiraRestApi = null;
-    private static String searchUrlFirstHalf = null;
-    private static String searchUrlSecondHalf = null;
     private static Initializer instance = null;
     private static String logFileName = null;
 
@@ -24,7 +21,7 @@ public class Initializer {
     public static void getInstance() throws IOException {
         if(instance==null) {
             instance = new Initializer();
-            instance.init();
+            init();
         }
     }
 
@@ -34,18 +31,6 @@ public class Initializer {
 
     public static List<String> getRepoPath(){
         return repoPath;
-    }
-
-    public static String getJiraRestApi() {
-        return jiraRestApi;
-    }
-
-    public static String getSearchUrlFirstHalf() {
-        return searchUrlFirstHalf;
-    }
-
-    public static String getSearchUrlSecondHalf() {
-        return searchUrlSecondHalf;
     }
 
     public static String getLogFileName() {
@@ -65,12 +50,9 @@ public class Initializer {
             JSONObject config = new JSONObject(myJson);
             JSONArray names = config.names();
 
-            jiraRestApi = config.getString(names.getString(0));
-            searchUrlSecondHalf = config.getString(names.getString(1));
-            logFileName = config.getString(names.getString(2));
-            projectNames = convertJSONArrayListString(config, names.getString(3));
-            repoPath = convertJSONArrayListString(config, names.getString(4));
-            searchUrlFirstHalf = config.getString(names.getString(5));
+            logFileName = config.getString(names.getString(0));
+            projectNames = convertJSONArrayListString(config, names.getString(1));
+            repoPath = convertJSONArrayListString(config, names.getString(2));
         }
     }
 

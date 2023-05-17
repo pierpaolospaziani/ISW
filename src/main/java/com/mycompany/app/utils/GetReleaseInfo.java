@@ -11,6 +11,8 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class GetReleaseInfo {
@@ -27,43 +29,41 @@ public class GetReleaseInfo {
         JSONArray versions = json.getJSONArray("versions");
 
         List<Release> releaseList = new ArrayList<>();
-        List<String> releasesNames = new ArrayList<>();
+        HashMap<String, LocalDateTime> releasesMap = new HashMap<>();
 
         for (int i = 0; i < versions.length(); i++) {
             if (versions.getJSONObject(i).has("releaseDate") && versions.getJSONObject(i).has("name")) {
+                LocalDateTime date = LocalDate.parse(versions.getJSONObject(i).get("releaseDate").toString()).atStartOfDay();
                 String name = versions.getJSONObject(i).get("name").toString();
-                addRelease(releasesNames, name, projName);
+                addRelease(releasesMap, name, date, projName);
             }
         }
 
-        // ordina le release
-        if (Objects.equals(projName, "BOOKKEEPER")){
-            bookkeeperSort(releasesNames);
-        } else {
-            openjpaSort(releasesNames);
-        }
+        // ordina le release in base al LocalDateTime
+        List<Map.Entry<String, LocalDateTime>> entryList = new ArrayList<>(releasesMap.entrySet());
+        entryList.sort(Map.Entry.comparingByValue());
 
         // tolgo i branch e il 50%
-        for (int i = 1; i <= releasesNames.size(); i++) {
-            ObjectId obj = repository.resolve(releasesNames.get(i - 1));
+        for (int i = 1; i <= entryList.size(); i++) {
+            ObjectId obj = repository.resolve(entryList.get(i - 1).getKey());
             if (obj == null){
-                releasesNames.remove(releasesNames.get(i - 1));
+                entryList.remove(entryList.get(i - 1));
             }
         }
-        int len = releasesNames.size();
+        int len = entryList.size();
         if (len > len / 2 + 1) {
-            releasesNames.subList(len / 2 + 1, len).clear();
+            entryList.subList(len / 2 + 1, len).clear();
         }
 
-        createReleases(releasesNames, releaseList, repository);
+        createReleases(entryList, releaseList, repository);
 
         return releaseList;
     }
 
-    private static void createReleases(List<String> releasesNames, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
-        for (String name : releasesNames) {
-            printProgressBar(name, releasesNames.indexOf(name), releasesNames.size());
-            Release release = new Release(name, repository);
+    private static void createReleases(List<Map.Entry<String, LocalDateTime>> entryList, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
+        for (Map.Entry<String, LocalDateTime> entry : entryList) {
+            printProgressBar(entry.getKey(), entryList.indexOf(entry), entryList.size());
+            Release release = new Release(entry.getKey(), entry.getValue(), repository);
             releaseList.add(release);
         }
     }
@@ -88,51 +88,13 @@ public class GetReleaseInfo {
     }
 
 
-    private static void openjpaSort(List<String> releasesNames) {
-        releasesNames.sort((s1, s2) -> {
-            String[] s1Parts = s1.split("/");
-            String[] s2Parts = s2.split("/");
-            String[] s1VersionParts = s1Parts[s1Parts.length-1].split("\\.");
-            String[] s2VersionParts = s2Parts[s1Parts.length-1].split("\\.");
-            int length = Math.min(s1VersionParts.length, s2VersionParts.length);
-            for (int i = 0; i < length; i++) {
-                int s1Part = Integer.parseInt(s1VersionParts[i]);
-                int s2Part = Integer.parseInt(s2VersionParts[i]);
-                if (s1Part != s2Part) {
-                    return s1Part - s2Part;
-                }
-            }
-            return s1VersionParts.length - s2VersionParts.length;
-        });
-    }
-
-
-    private static void bookkeeperSort(List<String> releasesNames) {
-        releasesNames.sort((s1, s2) -> {
-            String[] s1Parts = s1.split("-");
-            String[] s2Parts = s2.split("-");
-            String[] s1VersionParts = s1Parts[1].split("\\.");
-            String[] s2VersionParts = s2Parts[1].split("\\.");
-            int length = Math.min(s1VersionParts.length, s2VersionParts.length);
-            for (int i = 0; i < length; i++) {
-                int s1Part = Integer.parseInt(s1VersionParts[i]);
-                int s2Part = Integer.parseInt(s2VersionParts[i]);
-                if (s1Part != s2Part) {
-                    return s1Part - s2Part;
-                }
-            }
-            return s1VersionParts.length - s2VersionParts.length;
-        });
-    }
-
-
-    private static void addRelease(List<String> releaseList, String name, String projName) {
+    private static void addRelease(HashMap<String,LocalDateTime> releasesMap, String name, LocalDateTime date, String projName) {
         String[] tkn = name.split("-");
         if (!name.contains("-") || tkn.length == 0){
             if (Objects.equals(projName, "BOOKKEEPER")){
-                releaseList.add("refs/tags/release-" + name);
+                releasesMap.put("refs/tags/release-" + name, date);
             } else {
-                releaseList.add("refs/tags/" + name);
+                releasesMap.put("refs/tags/" + name, date);
             }
         }
     }
