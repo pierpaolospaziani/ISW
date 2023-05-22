@@ -7,6 +7,7 @@ import com.mycompany.app.utils.IO;
 import com.mycompany.app.utils.Initializer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
@@ -19,95 +20,18 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.*;
-import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.mycompany.app.utils.GetReleaseInfo.*;
+import static com.mycompany.app.connector.JiraReleases.*;
+import static com.mycompany.app.connector.JiraIssues.retrieveIssues;
 
-public class FilesRet {
-    private static String projectName = null;
+public class RetrieveDataset {
     private static List<Issue> issueList = null;
     private static List<Release> releaseList = null;
     private static Repository repository = null;
     private static Git gitRepository = null;
-
-
-    /** Esegue la scrittura delle metriche sul csv */
-    public static void writeOnFile() throws IOException {
-        try (FileWriter fileWriter = new FileWriter(projectName + ".csv")) {
-            fileWriter.append("Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Added, Churn, Avg. Churn, Authors Number, Average Change Set, Buggy\n");
-
-            // hashMap per il conteggio dell'Age
-            HashMap<String, Integer> hashMap = new HashMap<>();
-            for (ClassFile file : releaseList.get(0).getFiles()) {
-                hashMap.put(file.getPath(), 0);
-            }
-
-            for (Release release : releaseList) {
-                for (ClassFile file : release.getFiles()) {
-
-                    int releaseNumber = releaseList.indexOf(release);
-                    fileWriter.append(Integer.toString(releaseNumber+1));
-
-                    fileWriter.append(",");
-                    fileWriter.append(release.getName());
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getPath());
-
-                    fileWriter.append(",");
-                    fileWriter.append(String.valueOf(countAge(hashMap, file)));
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getCommitsNumbers().toString());
-
-                    fileWriter.append(",");
-                    fileWriter.append((file.getNumberOfBugFix().toString()));
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getLOCs().toString());
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getTouchedLOCs().toString());
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getAddedLOCs().toString());
-
-                    fileWriter.append(",");
-                    fileWriter.append(file.getChurn().toString());
-
-                    fileWriter.append(",");
-                    if (file.getCommitsNumbers() != 0){
-                        fileWriter.append(String.valueOf(file.getChurn()/file.getCommitsNumbers()));
-                    } else {
-                        fileWriter.append(file.getChurn().toString());
-                    }
-
-                    fileWriter.append(",");
-                    fileWriter.append((file.getnAuth().toString()));
-
-                    fileWriter.append(",");
-                    if (file.getCommitsNumbers() != 0){
-                        fileWriter.append(String.valueOf(file.getAverageChangeSet()/file.getCommitsNumbers()));
-                    } else {
-                        fileWriter.append((file.getAverageChangeSet().toString()));
-                    }
-
-                    fileWriter.append(",");
-                    fileWriter.append((file.getBuggy().toString()));
-
-                    fileWriter.append("\n");
-                }
-            }
-            fileWriter.flush();
-        } catch (Exception e) {
-            IO.appendOnLog(e +"\n");
-        }
-    }
 
 
     /** Ritorna l'age del file */
@@ -125,6 +49,42 @@ public class FilesRet {
             index++;
         }
         return age;
+    }
+
+
+    /** Conta le LOC del file specificato nella release */
+    public static int countLOCs(RevCommit releaseCommit, ClassFile classFile, Repository repository) throws IOException {
+        TreeWalk treeWalk = new TreeWalk(repository);
+        treeWalk.addTree(releaseCommit.getTree());
+        treeWalk.setFilter(PathFilter.create(classFile.getPath()));
+        treeWalk.setRecursive(true);
+        treeWalk.next();
+        ObjectId objectId = treeWalk.getObjectId(0);
+        ObjectLoader loader = repository.open(objectId);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(loader.openStream()))) {
+            int lines = 0;
+            String line;
+            while ((line = reader.readLine()) != null){
+                if (!line.trim().isEmpty()) {
+                    lines++;
+                }
+            }
+            return lines;
+        }
+    }
+
+
+    /** Conta il numero di autori del file specificato nella release */
+    public static int countAuthorsInFile(String filepath, ObjectId releaseCommitId, Repository repository) throws GitAPIException {
+        BlameResult blameResult = new Git(repository).blame()
+                .setFilePath(filepath)
+                .setStartCommit(releaseCommitId)
+                .call();
+        Set<String> authors = new HashSet<>();
+        for (int i = 0; i < blameResult.getResultContents().size(); i++) {
+            authors.add(blameResult.getSourceAuthor(i).getName());
+        }
+        return authors.size();
     }
 
 
@@ -221,80 +181,6 @@ public class FilesRet {
                 }
             }
         }
-    }
-
-
-    /** Setta l'opening version nel'issue specificata */
-    public static void setOpeningVersion(Issue issue, LocalDateTime openingVersionDate){
-        for (Release release : releaseList){
-            if (openingVersionDate.isBefore(release.getDate())){
-                issue.setOpeningVersion(releaseList.indexOf(release));
-                break;
-            }
-        }
-    }
-
-
-    /** Setta la fix version nel'issue specificata */
-    public static void setFixVersion(Issue issue, JSONArray fixVersions){
-        if (fixVersions.length() != 0){
-            String version = fixVersions.getJSONObject(fixVersions.length()-1).get("name").toString();
-            for (Release release : releaseList){
-                if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
-                        || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
-                    issue.setFixedVersion(releaseList.indexOf(release));
-                    break;
-                }
-            }
-        }
-    }
-
-
-    /** Setta l'injected version nel'issue specificata */
-    public static void setInjectedVersion(Issue issue, JSONArray injectedVersions){
-        if (injectedVersions.length() != 0){
-            String version = injectedVersions.getJSONObject(0).get("name").toString();
-            for (Release release : releaseList){
-                if (projectName.equals("BOOKKEEPER") && release.getName().split("-")[1].equals(version)
-                        || projectName.equals("OPENJPA") && release.getName().split("/")[release.getName().split("/").length-1].equals(version)){
-                    issue.setInjectedVersion(releaseList.indexOf(release));
-                    break;
-                }
-            }
-        }
-    }
-
-
-    /** JIRA: costruisce l'ArrayList che contiene tutti i ticket BUG chiusi e fixati */
-    public static List<Issue> retrieveIssues() throws IOException {
-        ArrayList<Issue> issuesListJira = new ArrayList<>();
-        int j;
-        int i = 0;
-        int total;
-        do {
-            j = i + 1000;
-            String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=%22"
-                    + projectName + "%22AND%22issueType%22=%22Bug%22AND(%22status%22=%22closed%22OR"
-                    + "%22status%22=%22resolved%22)AND%22resolution%22=%22fixed%22&fields=key,resolutiondate,versions,fixVersions,created&startAt="
-                    + i + "&maxResults=" + j;
-            JSONObject json = readJsonFromUrl(url);
-            JSONArray issues = json.getJSONArray("issues");
-            total = json.getInt("total");
-            for (; i < total && i < j; i++) {
-                String key = issues.getJSONObject(i % 1000).get("key").toString();
-                Issue issue = new Issue(key);
-                issuesListJira.add(issue);
-                JSONObject fields = (JSONObject) issues.getJSONObject(i % 1000).get("fields");
-                LocalDateTime openingVersionDate = LocalDateTime.parse(fields.get("created").toString().split("\\.")[0]);
-                JSONArray fixVersions = fields.getJSONArray("fixVersions");
-                JSONArray injectedVersions = fields.getJSONArray("versions");
-                setOpeningVersion(issue, openingVersionDate);
-                setFixVersion(issue, fixVersions);
-                setInjectedVersion(issue, injectedVersions);
-//                System.out.println( i + " :: " + issue.getKey() + " :: " + issue.getInjectedVersion() + " :: " + issue.getOpeningVersion() + " :: " + issue.getFixedVersion());
-            }
-        } while (i < total);
-        return issuesListJira;
     }
 
 
@@ -407,25 +293,6 @@ public class FilesRet {
     }
 
 
-    public static void printProgressBar(int releaseNumber, int progress, int total) {
-        int percent = (int) ((float) progress / (float) total * 100);
-        System.out.print("\rRELEASE " + releaseNumber + " of " + releaseList.size() + " :: [");
-        for (int i = 0; i < 50; i++) {
-            if (i < (percent / 2)) {
-                System.out.print("=");
-            } else if (i == (percent / 2)) {
-                System.out.print(">");
-            } else {
-                System.out.print(" ");
-            }
-        }
-        System.out.print("] " + percent + "%  ");
-        if (progress == total) {
-            System.out.print("\n");
-        }
-    }
-
-
     /** Calcola e setta il coefficiente di proportion per ogni release */
     public static void computeProportion(int i){
         double p = 0;
@@ -455,7 +322,7 @@ public class FilesRet {
 
 
     /** Usa il coefficiente di proportion per calcolare l'injected version per i ticket che ne sono privi */
-    public static void useProportion(){
+    public static void incrementalProportion(){
         for (Issue issue : issueList){
             if (issue.getInjectedVersion() == null
                     && issue.getOpeningVersion() != null
@@ -475,6 +342,25 @@ public class FilesRet {
     }
 
 
+    public static void printProgressBar(int releaseNumber, int progress, int total) {
+        int percent = (int) ((float) progress / (float) total * 100);
+        System.out.print("\rRELEASE " + releaseNumber + " of " + releaseList.size() + " :: [");
+        for (int i = 0; i < 50; i++) {
+            if (i < (percent / 2)) {
+                System.out.print("=");
+            } else if (i == (percent / 2)) {
+                System.out.print(">");
+            } else {
+                System.out.print(" ");
+            }
+        }
+        System.out.print("] " + percent + "%  ");
+        if (progress == total) {
+            System.out.print("\n");
+        }
+    }
+
+
     public static void main(String[] args) throws Exception {
 
         long startTime = System.nanoTime();
@@ -484,12 +370,11 @@ public class FilesRet {
 
             List<String> projects = Initializer.getProjectNames();
 
-            for (String project : projects) {
+            for (String projectName : projects) {
 
-                IO.appendOnLog(project+"\n");
+                IO.appendOnLog(projectName+"\n");
 
-                String repoPath = Initializer.getRepoPath().get(projects.indexOf(project));
-                projectName = Initializer.getProjectNames().get(projects.indexOf(project));
+                String repoPath = Initializer.getRepoPath().get(projects.indexOf(projectName));
 
                 FileRepositoryBuilder builder = new FileRepositoryBuilder();
                 repository = builder
@@ -501,22 +386,23 @@ public class FilesRet {
                 // JIRA: prendo la lista di release (ordinata)
                 releaseList = retrieveReleases(repository, projectName);
                 // JIRA: prendo la lista di issue bug fix
-                issueList = retrieveIssues();
+                issueList = retrieveIssues(projectName, releaseList);
                 // Calcola e setta il coefficiente di proportion per ogni release
                 for (int i = 0; i < releaseList.size(); i++) {
                     computeProportion(i);
                 }
                 // Calcola l'injected version per i ticket che ne sono privi
-                useProportion();
+                incrementalProportion();
 
                 // GIT: costruisce un ArrayList<ArrayList<RevCommit>> 'releaseCommits' che contiene l'array di commit divisi per release
                 List<ArrayList<RevCommit>> releaseCommits = getCommitsPerRelease();
 
                 computeMetrics(releaseCommits);
 
-                writeOnFile();
+                IO.writeOnFile(projectName, releaseList);
 
                 repository.close();
+                break;
             }
         } catch (Exception e){
             IO.appendOnLog(e+"\n");

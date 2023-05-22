@@ -1,4 +1,4 @@
-package com.mycompany.app.utils;
+package com.mycompany.app.connector;
 
 import com.mycompany.app.model.Release;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -9,19 +9,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class GetReleaseInfo {
+import static com.mycompany.app.utils.JsonUtils.readJsonFromUrl;
 
-    private GetReleaseInfo() {
+public class JiraReleases {
+
+    private JiraReleases() {
         throw new IllegalStateException("Utility class");
     }
 
-
+    /** JIRA: recupera la prima metà della lista di release ordinata */
     public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException, GitAPIException {
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
@@ -72,6 +72,18 @@ public class GetReleaseInfo {
     }
 
 
+    private static void addRelease(HashMap<String,LocalDateTime> releasesMap, String name, LocalDateTime date, String projName) {
+        String[] tkn = name.split("-");
+        if (!name.contains("-") || tkn.length == 0){
+            if (Objects.equals(projName, "BOOKKEEPER")){
+                releasesMap.put("refs/tags/release-" + name, date);
+            } else if (!name.split("\\.")[0].equals(String.valueOf(0))){
+                releasesMap.put("refs/tags/" + name, date);
+            }
+        }
+    }
+
+
     public static void printProgressBar(String name, int progress, int total) {
         int percent = (int) ((float) progress / (float) total * 100);
         System.out.print("\r" + name + " :: [");
@@ -88,35 +100,5 @@ public class GetReleaseInfo {
         if (progress == total) {
             System.out.print("\n");
         }
-    }
-
-
-    private static void addRelease(HashMap<String,LocalDateTime> releasesMap, String name, LocalDateTime date, String projName) {
-        String[] tkn = name.split("-");
-        if (!name.contains("-") || tkn.length == 0){
-            if (Objects.equals(projName, "BOOKKEEPER")){
-                releasesMap.put("refs/tags/release-" + name, date);
-            } else if (!name.split("\\.")[0].equals(String.valueOf(0))){
-                releasesMap.put("refs/tags/" + name, date);
-            }
-        }
-    }
-
-
-    public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-        InputStream is = new URL(url).openStream();
-        BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-        String jsonText = readAll(rd);
-        return new JSONObject(jsonText);
-    }
-
-
-    private static String readAll(Reader rd) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        int cp;
-        while ((cp = rd.read()) != -1) {
-            sb.append((char) cp);
-        }
-        return sb.toString();
     }
 }
