@@ -378,7 +378,6 @@ public class RetrieveDataset {
             }
         } catch (Exception e){
             IO.appendOnLog(e+"\n");
-            e.printStackTrace();
         }
     }
 }
