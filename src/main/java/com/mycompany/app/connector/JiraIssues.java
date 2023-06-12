@@ -44,7 +44,6 @@ public class JiraIssues {
                 setOpeningVersion(issue, openingVersionDate, releaseList);
                 setFixVersion(issue, fixVersions, projectName, releaseList);
                 setInjectedVersion(issue, injectedVersions, projectName, releaseList);
-//                System.out.println( i + " :: " + issue.getKey() + " :: " + issue.getInjectedVersion() + " :: " + issue.getOpeningVersion() + " :: " + issue.getFixedVersion());
             }
         } while (i < total);
         return issuesListJira;

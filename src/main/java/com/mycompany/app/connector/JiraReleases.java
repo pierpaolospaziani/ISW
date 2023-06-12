@@ -57,15 +57,12 @@ public class JiraReleases {
 
         createReleases(entryList, releaseList, repository);
 
-//        for (Release r : releaseList) System.out.println(r.getName());
-
         return releaseList;
     }
 
 
     private static void createReleases(List<Map.Entry<String, LocalDateTime>> entryList, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
         for (Map.Entry<String, LocalDateTime> entry : entryList) {
-            printProgressBar(entry.getKey(), entryList.indexOf(entry), entryList.size());
             Release release = new Release(entry.getKey(), entry.getValue(), repository);
             releaseList.add(release);
         }
@@ -80,25 +77,6 @@ public class JiraReleases {
             } else if (!name.split("\\.")[0].equals(String.valueOf(0))){
                 releasesMap.put("refs/tags/" + name, date);
             }
-        }
-    }
-
-
-    public static void printProgressBar(String name, int progress, int total) {
-        int percent = (int) ((float) progress / (float) total * 100);
-        System.out.print("\r" + name + " :: [");
-        for (int i = 0; i < 50; i++) {
-            if (i < (percent / 2)) {
-                System.out.print("=");
-            } else if (i == (percent / 2)) {
-                System.out.print(">");
-            } else {
-                System.out.print(" ");
-            }
-        }
-        System.out.print("] " + percent + "%  ");
-        if (progress == total) {
-            System.out.print("\n");
         }
     }
 }

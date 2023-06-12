@@ -191,7 +191,6 @@ public class RetrieveDataset {
         for (Release release : releaseList) {
             ArrayList<RevCommit> newCommits = new ArrayList<>();
             for (RevCommit c : release.getCommits()){
-                printProgressBar(releaseList.indexOf(release),release.getCommits().indexOf(c), release.getCommits().size());
                 if (!commits.contains(c)){
                     commits.add(c);
                     newCommits.add(c);
@@ -279,7 +278,6 @@ public class RetrieveDataset {
         for (ArrayList<RevCommit> commitsPerRelease : releaseCommits){
             int releaseNumber = releaseCommits.indexOf(commitsPerRelease) + 1;
             for (RevCommit commit : commitsPerRelease){
-                printProgressBar(releaseNumber, commitsPerRelease.indexOf(commit), commitsPerRelease.size());
                 RevTree tree = commit.getTree();
                 RevWalk revWalk = new RevWalk(repository);
                 // caso speciale per il primo commit che non ha parent
@@ -317,7 +315,6 @@ public class RetrieveDataset {
         } else {
             releaseList.get(i).setProportion(1);
         }
-//            System.out.println(releaseList.get(i).getName() + " :: " + releaseList.get(i).getProportion());
     }
 
 
@@ -335,36 +332,12 @@ public class RetrieveDataset {
                 }
                 predictedIV = predictedIV/(i+1);
                 issue.setInjectedVersion((int) Math.round(predictedIV));
-
-//                System.out.println( i + " :: " + issue.getKey() + " :: " + issue.getInjectedVersion() + " :: " + issue.getOpeningVersion() + " :: " + issue.getFixedVersion());
             }
-        }
-    }
-
-
-    public static void printProgressBar(int releaseNumber, int progress, int total) {
-        int percent = (int) ((float) progress / (float) total * 100);
-        System.out.print("\rRELEASE " + releaseNumber + " of " + releaseList.size() + " :: [");
-        for (int i = 0; i < 50; i++) {
-            if (i < (percent / 2)) {
-                System.out.print("=");
-            } else if (i == (percent / 2)) {
-                System.out.print(">");
-            } else {
-                System.out.print(" ");
-            }
-        }
-        System.out.print("] " + percent + "%  ");
-        if (progress == total) {
-            System.out.print("\n");
         }
     }
 
 
     public static void main(String[] args) throws Exception {
-
-        long startTime = System.nanoTime();
-
         try {
             Initializer.getInstance();
 
@@ -402,16 +375,10 @@ public class RetrieveDataset {
                 IO.writeOnFile(projectName, releaseList);
 
                 repository.close();
-                break;
             }
         } catch (Exception e){
             IO.appendOnLog(e+"\n");
             e.printStackTrace();
         }
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-
-        System.out.println("\rTempo di esecuzione: " + (float) duration/1000000000 + " secondi");
     }
 }
