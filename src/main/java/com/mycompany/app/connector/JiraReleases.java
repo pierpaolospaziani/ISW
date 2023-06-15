@@ -50,20 +50,16 @@ public class JiraReleases {
                 entryList.remove(entryList.get(i - 1));
             }
         }
-        int len = entryList.size();
-        if (len > len / 2 + 1) {
-            entryList.subList(len / 2 + 1, len).clear();
-        }
 
-        createReleases(entryList, releaseList, repository);
+        createReleases(entryList, releaseList);
 
         return releaseList;
     }
 
 
-    private static void createReleases(List<Map.Entry<String, LocalDateTime>> entryList, List<Release> releaseList, Repository repository) throws IOException, GitAPIException {
+    private static void createReleases(List<Map.Entry<String, LocalDateTime>> entryList, List<Release> releaseList) {
         for (Map.Entry<String, LocalDateTime> entry : entryList) {
-            Release release = new Release(entry.getKey(), entry.getValue(), repository);
+            Release release = new Release(entry.getKey(), entry.getValue());
             releaseList.add(release);
         }
     }

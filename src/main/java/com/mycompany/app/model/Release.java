@@ -12,15 +12,13 @@ import java.util.List;
 public class Release {
     private final String name;
     private final LocalDateTime date;
-    private final List<RevCommit> commits;
-    private final List<ClassFile> files;
+    private List<RevCommit> commits;
+    private List<ClassFile> files;
     private double proportion;
 
-    public Release(String name, LocalDateTime date, Repository repository) throws IOException, GitAPIException {
+    public Release(String name, LocalDateTime date) {
         this.name       = name;
         this.date       = date;
-        this.commits    = GitConnector.retrieveCommits(repository, this.name);
-        this.files      = GitConnector.retrieveFiles(repository, this.name);
         this.proportion = 0.0;
     }
 
@@ -46,5 +44,13 @@ public class Release {
 
     public void setProportion(double proportion) {
         this.proportion = proportion;
+    }
+
+    public void retrieveCommits(Repository repository) throws IOException {
+        this.commits = GitConnector.retrieveCommits(repository, this.name);
+    }
+
+    public void retrieveFiles(Repository repository) throws GitAPIException, IOException {
+        this.files = GitConnector.retrieveFiles(repository, this.name);
     }
 }

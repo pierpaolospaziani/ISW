@@ -170,7 +170,7 @@ public class RetrieveDataset {
 
     /** Setta il file come buggy per tutte le affected versions */
     public static void setBugginess(Issue issue, String filepath){
-        if (issue.getInjectedVersion() != null && issue.getFixedVersion() != null){
+        if (issue.getInjectedVersion() != null && issue.getFixedVersion() != null && issue.getFixedVersion() <= releaseList.size()){
             for (int i = issue.getInjectedVersion(); i < issue.getFixedVersion(); i++){
                 List<ClassFile> files = releaseList.get(i).getFiles();
                 for (ClassFile file : files){
@@ -324,13 +324,14 @@ public class RetrieveDataset {
             if (issue.getInjectedVersion() == null
                     && issue.getOpeningVersion() != null
                     && issue.getFixedVersion() != null
-                    && issue.getOpeningVersion() <= issue.getFixedVersion()){
+                    && issue.getOpeningVersion() <= issue.getFixedVersion()
+                    && issue.getFixedVersion() <= releaseList.size()){
                 double predictedIV = 0;
                 int i;
-                for (i = 0; i < issue.getFixedVersion(); i++){
+                for (i = 0; i < issue.getFixedVersion(); i++) {
                     predictedIV += issue.getFixedVersion() - (issue.getFixedVersion() - issue.getOpeningVersion()) * releaseList.get(i).getProportion();
                 }
-                predictedIV = predictedIV/(i+1);
+                predictedIV = predictedIV / (i + 1);
                 issue.setInjectedVersion((int) Math.round(predictedIV));
             }
         }
@@ -360,6 +361,17 @@ public class RetrieveDataset {
                 releaseList = retrieveReleases(repository, projectName);
                 // JIRA: prendo la lista di issue bug fix
                 issueList = retrieveIssues(projectName, releaseList);
+
+                if (releaseList.size()%2 == 0)
+                    releaseList = releaseList.subList(0, releaseList.size()/2);
+                else
+                    releaseList = releaseList.subList(0, (releaseList.size()+1)/2);
+
+                for (Release release : releaseList) {
+                    release.retrieveCommits(repository);
+                    release.retrieveFiles(repository);
+                }
+
                 // Calcola e setta il coefficiente di proportion per ogni release
                 for (int i = 0; i < releaseList.size(); i++) {
                     computeProportion(i);

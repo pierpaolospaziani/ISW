@@ -1343,7 +1343,7 @@ Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Ad
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieMXBean.java,3,0,0,28,0,0,0,0,1,0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieShell.java,2,10,2,1366,804,708,541,54.1,4,12.8,true
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieThread.java,0,2,0,48,77,66,48,24.0,1,18.0,false
-6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedChannel.java,5,4,0,190,206,115,36,9.0,4,13.75,false
+6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedChannel.java,5,4,0,190,206,115,36,9.0,4,13.75,true
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedChannelBase.java,0,1,0,49,55,55,49,49.0,1,9.0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedReadChannel.java,0,1,0,94,103,103,94,94.0,1,9.0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/CacheCallback.java,0,1,0,31,34,34,31,31.0,1,17.0,false
@@ -1351,7 +1351,7 @@ Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Ad
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/Cookie.java,3,7,0,405,380,279,172,24.571428571428573,4,28.857142857142858,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryKey.java,0,1,0,71,83,83,71,71.0,1,14.0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryKeyValue.java,0,1,0,115,129,129,115,115.0,1,17.0,false
-6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryLogger.java,5,8,2,802,554,438,304,38.0,5,14.125,false
+6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryLogger.java,5,8,2,802,554,438,304,38.0,5,14.125,true
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryMemTable.java,0,2,0,393,472,456,393,196.5,2,19.0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/ExitCode.java,3,0,0,38,0,0,0,0,1,0,false
 6,refs/tags/release-4.3.0,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/FileInfo.java,5,6,1,348,208,117,22,3.6666666666666665,5,26.666666666666668,false
@@ -1780,9 +1780,9 @@ Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Ad
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieException.java,6,0,0,131,0,0,0,0,4,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieMXBean.java,4,0,0,28,0,0,0,0,1,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BookieShell.java,3,1,1,1173,456,427,340,340.0,3,4.0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedChannel.java,6,0,0,170,0,0,0,0,2,0,false
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/BufferedChannel.java,6,0,0,170,0,0,0,0,2,0,true
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/Cookie.java,4,0,0,237,0,0,0,0,2,0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryLogger.java,6,0,0,535,0,0,0,0,4,0,false
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/EntryLogger.java,6,0,0,535,0,0,0,0,4,0,true
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/ExitCode.java,4,0,0,38,0,0,0,0,1,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/FileInfo.java,6,0,0,336,0,0,0,0,4,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/FileSystemUpgrade.java,4,0,0,352,0,0,0,0,3,0,false
@@ -1808,7 +1808,7 @@ Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Ad
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/ReadOnlyFileInfo.java,3,0,0,38,0,0,0,0,1,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/bookie/ScanAndCompareGarbageCollector.java,3,0,0,96,0,0,0,0,2,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/AsyncCallback.java,6,0,0,136,0,0,0,0,3,0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/BKException.java,6,0,0,313,0,0,0,0,3,0,false
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/BKException.java,6,0,0,313,0,0,0,0,3,0,true
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/BookKeeper.java,6,0,0,644,0,0,0,0,4,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/BookKeeperAdmin.java,6,1,1,828,7,7,6,6.0,3,9.0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/client/BookieWatcher.java,6,0,0,306,0,0,0,0,4,0,false
@@ -1869,14 +1869,14 @@ Version, Version Name, Name, Age, Revisions, Bugfix, LOCs, LOCs Touched, LOCs Ad
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/net/DNS.java,1,0,0,325,0,0,0,0,1,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BKStats.java,4,0,0,219,0,0,0,0,2,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieClient.java,6,1,1,254,35,21,6,6.0,4,13.0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieProtocol.java,6,0,0,155,0,0,0,0,3,0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieServer.java,6,0,0,574,0,0,0,0,4,0,false
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieProtocol.java,6,0,0,155,0,0,0,0,3,0,true
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieServer.java,6,0,0,574,0,0,0,0,4,0,true
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieServerBean.java,4,0,0,72,0,0,0,0,2,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookieServerMXBean.java,4,0,0,44,0,0,0,0,1,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/BookkeeperInternalCallbacks.java,6,1,0,129,16,16,15,15.0,4,12.0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/DataFormats.java,3,0,0,3763,0,0,0,0,2,0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/NIOServerFactory.java,5,1,1,515,26,16,6,6.0,4,2.0,false
-7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/PerChannelBookieClient.java,6,4,4,719,155,110,61,15.25,4,4.75,false
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/NIOServerFactory.java,5,1,1,515,26,16,6,6.0,4,2.0,true
+7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/PerChannelBookieClient.java,6,4,4,719,155,110,61,15.25,4,4.75,true
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/proto/ServerStats.java,6,0,0,82,0,0,0,0,2,0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/replication/Auditor.java,3,5,5,508,196,123,45,9.0,1,6.0,false
 7,refs/tags/release-4.2.3,bookkeeper-server/src/main/java/org/apache/bookkeeper/replication/AuditorElector.java,3,2,2,328,35,34,29,14.5,2,8.5,false
