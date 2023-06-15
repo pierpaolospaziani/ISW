@@ -22,7 +22,7 @@ public class JiraReleases {
     }
 
     /** JIRA: recupera la prima metà della lista di release ordinata */
-    public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException, GitAPIException {
+    public static List<Release> retrieveReleases(Repository repository, String projName) throws IOException, JSONException {
 
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
         JSONObject json = readJsonFromUrl(url);
